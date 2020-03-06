@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# CLIENT TOKEN
+client_data.json
+
+# Sound files
+sounds/*.ogg
+sounds/*.mp3
+sounds/*.opus
