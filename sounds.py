@@ -53,15 +53,15 @@ class Sounds(commands.Cog):
 
     @commands.command()
     async def wow(self, ctx):
-        await self.join_voice(ctx)
-        fname = await self.play_random(ctx, glob.glob("sounds/wow*.*"))
-        print(f"Played {fname} in {ctx.channel}")
+        if await self.join_voice(ctx):
+            fname = await self.play_random(ctx, glob.glob("sounds/wow*.*"))
+            print(f"Played {fname} in {ctx.channel}")
 
     @commands.command()
     async def death(self, ctx):
-        await self.join_voice(ctx)
-        fname = await self.play_random(ctx, glob.glob("sounds/legostarwarsdeath-*.*"))
-        print(f"Played {fname} in {ctx.channel}")
+        if await self.join_voice(ctx):
+            fname = await self.play_random(ctx, glob.glob("sounds/legostarwarsdeath-*.*"))
+            print(f"Played {fname} in {ctx.channel}")
 
 
 def setup(bot):
