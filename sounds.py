@@ -8,7 +8,6 @@ import random
 class Sounds(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.tracks = {}
 
 
     @commands.command(name="join")
@@ -40,11 +39,7 @@ class Sounds(commands.Cog):
             await ctx.send("I can't find any files...")
             return
         fname = random.choice(filenames)
-        if fname in self.tracks.keys():
-            source = self.tracks[fname]
-        else:
-            source = await discord.FFmpegOpusAudio.from_probe(fname)
-            self.tracks[fname] = source
+        source = await discord.FFmpegOpusAudio.from_probe(fname)
 
         ctx.voice_client.play(source)
 
