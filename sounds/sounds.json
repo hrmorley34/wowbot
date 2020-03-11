@@ -1,0 +1,4 @@
+{
+  "wow": [{"glob": "sounds/wow*.ogg"}],
+  "death": [{"glob": "sounds/legostarwarsdeath-*.ogg"}]
+}
