@@ -7,6 +7,6 @@
   },
   "awman": {
     "aliases": ["creeper"],
-    "files": [{"filename": "revenge-awman.ogg"}]
+    "files": [{"filename": "sounds/revenge-awman.ogg"}]
   }
 }
