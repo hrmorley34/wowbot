@@ -6,7 +6,16 @@
     "files": [{"glob": "sounds/legostarwarsdeath-*.ogg"}]
   },
   "awman": {
-    "aliases": ["creeper"],
+    "aliases": ["creeper", "awwman", "awwwman", "awwwwman"],
     "files": [{"filename": "sounds/revenge-awman.ogg"}]
+  },
+  "doit": {
+    "files": [{"filename": "sounds/starwars-doit.ogg"}]
+  },
+  "survival": {
+    "files": [{"filename": "sounds/michaelrosen-survival.ogg"}]
+  },
+  "nice": {
+    "files": [{"glob": "sounds/michaelrosen-nice-*.ogg"}]
   }
 }
