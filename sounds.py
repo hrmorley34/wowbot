@@ -47,8 +47,9 @@ async def leave_voice(ctx):
         await ctx.voice_client.disconnect()
 
 
-def sound_player(name, files):
-    @commands.command(name=name)
+def sound_player(name, data):
+    files = data["files"]
+    @commands.command(name=name, aliases=data.get("aliases", []))
     async def function(ctx):
         if await join_voice(ctx):
             w = ([], [])
@@ -79,8 +80,8 @@ def setup(bot):
     with open("sounds/sounds.json") as f:
         SOUNDS = json.load(f)
 
-    for name, files in SOUNDS.items():
-        bot.add_command(sound_player(name, files))
+    for name, data in SOUNDS.items():
+        bot.add_command(sound_player(name, data))
         LOADED_COMMANDS.append(name)
 
 def teardown(bot):

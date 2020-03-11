@@ -1,4 +1,12 @@
 {
-  "wow": [{"glob": "sounds/wow*.ogg"}],
-  "death": [{"glob": "sounds/legostarwarsdeath-*.ogg"}]
+  "wow": {
+    "files": [{"glob": "sounds/wow*.ogg"}]
+  },
+  "death": {
+    "files": [{"glob": "sounds/legostarwarsdeath-*.ogg"}]
+  },
+  "awman": {
+    "aliases": ["creeper"],
+    "files": [{"filename": "revenge-awman.ogg"}]
+  }
 }
