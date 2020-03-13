@@ -17,5 +17,9 @@
   },
   "nice": {
     "files": [{"glob": "sounds/michaelrosen-nice-*.ogg"}]
+  },
+  "bitesthedust": {
+    "aliases": ["anotherone", "bitethedust", "bitthedust", "anotheronebitesthedust"],
+    "files": [{"filename": "sounds/queen-bitesthedust.ogg"}]
   }
 }
