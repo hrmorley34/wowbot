@@ -21,5 +21,20 @@
   "bitesthedust": {
     "aliases": ["anotherone", "bitethedust", "bitthedust", "anotheronebitesthedust"],
     "files": [{"filename": "sounds/queen-bitesthedust.ogg"}]
+  },
+  "word": {
+    "files": [{"filename": "sounds/word-ding.ogg"}]
+  },
+  "vergeofgreatness": {
+    "aliases": ["verge", "vergegreatness", "thisclose"],
+    "files": [{"filename": "sounds/verge-of-greatness.ogg"}]
+  },
+  "vsauce": {
+    "aliases": ["heyvsauce"],
+    "files": [{"filename": "sounds/vsauce-music.ogg"}]
+  },
+  "vsauce+": {
+    "aliases": ["vsauce2", "heyvsauce+", "vsauceext", "vsaucext"],
+    "files": [{"filename": "sounds/vsauce-music-extended.ogg"}]
   }
 }
