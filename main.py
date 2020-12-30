@@ -5,9 +5,10 @@ from discord.ext import commands
 import json
 
 
-bot = commands.Bot(command_prefix="&")
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("&"))
 
 activity = discord.Game("wow - &wow")
+
 
 @bot.event
 async def on_ready():
@@ -15,7 +16,10 @@ async def on_ready():
     await bot.change_presence(activity=activity)
     print(f"Updated status: {activity}")
 
+
 bot.load_extension("sounds")
+
+
 @bot.command()
 async def reload(ctx):
     bot.reload_extension("sounds")

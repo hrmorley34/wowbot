@@ -1,10 +1,10 @@
 import discord
 from discord.ext import commands
 
-import os
 import json
 import glob
 import random
+
 
 @commands.command(name="join")
 async def join_voice(ctx):
@@ -14,21 +14,23 @@ async def join_voice(ctx):
         await ctx.send("But you aren't in a voice chat!")
         return False
 
-    if ctx.voice_client and ctx.voice_client.channel == voicestate.channel: # already there
+    if (
+        ctx.voice_client is not None and ctx.voice_client.channel == voicestate.channel
+    ):  # already there
         if ctx.voice_client.is_playing():
             ctx.voice_client.stop()
         return True
 
     try:
         await voicestate.channel.connect()
-    except discord.ClientException: # already in a voice chat
+    except discord.ClientException:  # already in a voice chat
         if ctx.voice_client and not ctx.voice_client.is_playing():
-            await ctx.bot.move_to(voicestate.channel)
+            await ctx.voice_client.move_to(voicestate.channel)
         else:
             await ctx.send("Sorry, I'm busy right now.")
             return False
-
     return True
+
 
 async def play_random(ctx, filenames):
     if len(filenames) <= 0:
@@ -41,14 +43,15 @@ async def play_random(ctx, filenames):
 
     return fname
 
-@commands.command(name="leave")
+
+@commands.command(name="leave", aliases=["stop"])
 async def leave_voice(ctx):
-    if ctx.voice_client:
-        await ctx.voice_client.disconnect()
+    await ctx.voice_client.disconnect()
 
 
 def sound_player(name, data):
     files = data["files"]
+
     @commands.command(name=name, aliases=data.get("aliases", []))
     async def function(ctx):
         if await join_voice(ctx):
@@ -73,6 +76,8 @@ def sound_player(name, data):
 
 
 LOADED_COMMANDS = []
+
+
 def setup(bot):
     bot.add_command(join_voice)
     bot.add_command(leave_voice)
@@ -83,6 +88,7 @@ def setup(bot):
     for name, data in SOUNDS.items():
         bot.add_command(sound_player(name, data))
         LOADED_COMMANDS.append(name)
+
 
 def teardown(bot):
     bot.remove_command(join_voice)
