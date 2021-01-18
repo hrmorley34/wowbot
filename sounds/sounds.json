@@ -36,5 +36,17 @@
   "vsauce+": {
     "aliases": ["vsauce2", "heyvsauce+", "vsauceext", "vsaucext"],
     "files": [{"filename": "sounds/vsauce-music-extended.ogg"}]
+  },
+  "wait": {
+    "aliases": ["waituhoh", "wuhoh"],
+    "files": [{"filename": "sounds/Wait Uh Oh.ogg"}]
+  },
+  "uhoh": {
+    "aliases": ["uh-oh", "uoh"],
+    "files": [{"filename": "sounds/Uh Oh.ogg"}]
+  },
+  "toofar": {
+    "aliases": ["gonetoofar"],
+    "files": [{"filename": "sounds/Too Far.ogg"}]
   }
 }
