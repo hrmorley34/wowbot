@@ -81,7 +81,7 @@ def new_sound_player(name, data):
         if await self.join_voice(ctx):
             fnames = random.choices(arrays, weights)[0]
             fname = await self.play_random(ctx, fnames)
-            print(f"Played {name} ({fname}) in {ctx.channel}")
+            print(f"Played {name} ({fname}) in {ctx.author.voice.channel.name} ({ctx.guild.name})")
 
     return cmd
 
@@ -92,9 +92,10 @@ def VoiceCog(bot: commands.bot.BotBase):
 
     commands = {}
     for name, data in sounds_json.items():
-        commands["sound_" + name] = new_sound_player(name, data)
+        commands[name] = new_sound_player(name, data)
 
-    pdict = {**commands, "soundcommands": commands}
+    pdict = {"sound_" + name: cmd for name, cmd in commands.items()}
+    pdict["soundcommands"] = commands
 
     VoiceCogT = type("VoiceCog", (BaseVoiceCog,), pdict)
 

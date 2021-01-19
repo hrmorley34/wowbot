@@ -131,3 +131,6 @@ dmypy.json
 
 # CLIENT TOKEN
 client_data.json
+
+# Client data
+jsons/reactionguilds.json
