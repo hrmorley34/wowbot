@@ -48,5 +48,9 @@
   "toofar": {
     "aliases": ["gonetoofar"],
     "files": [{"filename": "sounds/Too Far.ogg"}]
+  },
+  "a": {
+    "files": [{"filename": "sounds/a.ogg"}],
+    "commandkwargs": {"hidden": true}
   }
 }
