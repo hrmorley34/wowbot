@@ -81,3 +81,6 @@ class PartialContext(commands.Context):
     author = None
     channel = None
     guild = None
+
+    async def send(*args, **kwargs):
+        pass
