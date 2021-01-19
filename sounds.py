@@ -6,50 +6,61 @@ import glob
 import random
 
 
-@commands.command(name="join")
-async def join_voice(ctx):
-    voicestate = ctx.author.voice
+class BaseVoiceCog(commands.Cog):
+    bot: discord.client.Client
+    soundcommands: list = None
 
-    if voicestate is None:
-        await ctx.send("But you aren't in a voice chat!")
-        return False
+    def __init__(self, bot: discord.client.Client):
+        self.bot = bot
 
-    if (
-        ctx.voice_client is not None and ctx.voice_client.channel == voicestate.channel
-    ):  # already there
-        if ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
+    def __repr__(self):
+        s = "<" + type(self).__name__
+        if self.soundcommands is not None:
+            s += " soundcommands=list[{}]".format(len(self.soundcommands))
+        return s + ">"
+
+    @commands.command(name="join")
+    async def join_voice(self, ctx):
+        voicestate = ctx.author.voice
+
+        if voicestate is None:
+            await ctx.send("But you aren't in a voice chat!")
+            return False
+
+        if (
+            ctx.voice_client is not None and ctx.voice_client.channel == voicestate.channel
+        ):  # already there
+            if ctx.voice_client.is_playing():
+                ctx.voice_client.stop()
+            return True
+
+        try:
+            await voicestate.channel.connect()
+        except discord.ClientException:  # already in a voice chat
+            if ctx.voice_client and not ctx.voice_client.is_playing():
+                await ctx.voice_client.move_to(voicestate.channel)
+            else:
+                await ctx.send("Sorry, I'm busy right now.")
+                return False
         return True
 
-    try:
-        await voicestate.channel.connect()
-    except discord.ClientException:  # already in a voice chat
-        if ctx.voice_client and not ctx.voice_client.is_playing():
-            await ctx.voice_client.move_to(voicestate.channel)
-        else:
-            await ctx.send("Sorry, I'm busy right now.")
-            return False
-    return True
+    async def play_random(self, ctx, filenames):
+        if len(filenames) <= 0:
+            await ctx.send("I can't find any files...")
+            return
+        fname = random.choice(filenames)
+        source = await discord.FFmpegOpusAudio.from_probe(fname)
+
+        ctx.voice_client.play(source)
+
+        return fname
+
+    @commands.command(name="leave", aliases=["stop"])
+    async def leave_voice(self, ctx):
+        await ctx.voice_client.disconnect()
 
 
-async def play_random(ctx, filenames):
-    if len(filenames) <= 0:
-        await ctx.send("I can't find any files...")
-        return
-    fname = random.choice(filenames)
-    source = await discord.FFmpegOpusAudio.from_probe(fname)
-
-    ctx.voice_client.play(source)
-
-    return fname
-
-
-@commands.command(name="leave", aliases=["stop"])
-async def leave_voice(ctx):
-    await ctx.voice_client.disconnect()
-
-
-def sound_player(name, data):
+def new_sound_player(name, data):
     files = data["files"]
 
     arrays, weights = [], []
@@ -66,35 +77,33 @@ def sound_player(name, data):
         weights.append(fd.get("weight", 1))
 
     @commands.command(name=name, aliases=data.get("aliases", []), **data.get("commandkwargs", {}))
-    async def cmd(ctx):
-        if await join_voice(ctx):
+    async def cmd(self, ctx):
+        if await self.join_voice(ctx):
             fnames = random.choices(arrays, weights)[0]
-            fname = await play_random(ctx, fnames)
+            fname = await self.play_random(ctx, fnames)
             print(f"Played {name} ({fname}) in {ctx.channel}")
 
     return cmd
 
 
-LOADED_COMMANDS = []
-
-
-def setup(bot):
-    bot.add_command(join_voice)
-    bot.add_command(leave_voice)
-
+def VoiceCog(bot: commands.bot.BotBase):
     with open("sounds/sounds.json") as f:
-        SOUNDS = json.load(f)
+        sounds_json = json.load(f)
 
-    for name, data in SOUNDS.items():
-        bot.add_command(sound_player(name, data))
-        LOADED_COMMANDS.append(name)
+    commands = {}
+    for name, data in sounds_json.items():
+        commands["sound_" + name] = new_sound_player(name, data)
+
+    pdict = {**commands, "soundcommands": commands}
+
+    VoiceCogT = type("VoiceCog", (BaseVoiceCog,), pdict)
+
+    return VoiceCogT(bot)
 
 
-def teardown(bot):
-    bot.remove_command(join_voice)
-    bot.remove_command(leave_voice)
+def setup(bot: commands.bot.BotBase):
+    bot.add_cog(VoiceCog(bot))
 
-    for name in LOADED_COMMANDS:
-        bot.remove_command(name)
 
-    LOADED_COMMANDS.clear()
+def teardown(bot: commands.bot.BotBase):
+    bot.remove_cog("VoiceCog")
