@@ -102,8 +102,10 @@ def VoiceCog(bot: commands.bot.BotBase):
 
 
 def setup(bot: commands.bot.BotBase):
+    print("cogs.sounds.setup")
     bot.add_cog(VoiceCog(bot))
 
 
 def teardown(bot: commands.bot.BotBase):
+    print("cogs.sounds.teardown")
     bot.remove_cog("VoiceCog")

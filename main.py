@@ -17,13 +17,19 @@ async def on_ready():
     print(f"Updated status: {activity}")
 
 
-bot.load_extension("sounds")
+bot.load_extension("cogs")
 
 
 @bot.command(hidden=True)
 async def reload(ctx):
-    bot.reload_extension("sounds")
+    bot.reload_extension("cogs")
     print("Reloaded")
+
+    try:
+        await ctx.message.add_reaction("\u2705")  # \N{White heavy check mark}
+    except discord.Forbidden:
+        pass  # it doesn't matter too much
+
     await bot.change_presence(activity=activity)
     print(f"Updated status: {activity}")
 
