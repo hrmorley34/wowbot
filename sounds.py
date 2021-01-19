@@ -52,27 +52,27 @@ async def leave_voice(ctx):
 def sound_player(name, data):
     files = data["files"]
 
-    @commands.command(name=name, aliases=data.get("aliases", []))
-    async def function(ctx):
+    arrays, weights = [], []
+    for fd in files:
+        filenames = []
+        if "glob" in fd.keys():
+            filenames.extend(glob.glob(fd["glob"]))
+        if "filenames" in fd.keys():
+            filenames.extend(fd["filenames"])
+        if "filename" in fd.keys():
+            filenames.append(fd["filename"])
+
+        arrays.append(filenames)
+        weights.append(fd.get("weight", 1))
+
+    @commands.command(name=name, aliases=data.get("aliases", []), **data.get("commandkwargs", {}))
+    async def cmd(ctx):
         if await join_voice(ctx):
-            w = ([], [])
-            for fd in files:
-                if "glob" in fd.keys():
-                    filenames = glob.glob(fd["glob"])
-                elif "filenames" in fd.keys():
-                    filenames = list(fd["filenames"])
-                else:
-                    filenames = [fd["filename"]]
-                weight = fd.get("weight", 1)
-
-                w[0].append(filenames)
-                w[1].append(weight)
-
-            fnames = random.choices(*w)[0]
+            fnames = random.choices(arrays, weights)[0]
             fname = await play_random(ctx, fnames)
             print(f"Played {name} ({fname}) in {ctx.channel}")
 
-    return function
+    return cmd
 
 
 LOADED_COMMANDS = []
@@ -96,3 +96,5 @@ def teardown(bot):
 
     for name in LOADED_COMMANDS:
         bot.remove_command(name)
+
+    LOADED_COMMANDS.clear()

@@ -20,7 +20,7 @@ async def on_ready():
 bot.load_extension("sounds")
 
 
-@bot.command()
+@bot.command(hidden=True)
 async def reload(ctx):
     bot.reload_extension("sounds")
     print("Reloaded")
