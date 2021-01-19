@@ -73,7 +73,10 @@ class ReactorCog(commands.Cog):
             soundcmd = vcog.soundcommands.get(sound)
 
             guild = self.bot.get_guild(guildid)
-            member = guild.get_member(rawreaction.user_id)
+            member = rawreaction.member
+            # member = guild.get_member(rawreaction.user_id)
+            # if member is None:
+            #     member = await guild.fetch_member(rawreaction.user_id)
             ch = self.bot.get_channel(rawreaction.channel_id)
             if ch is None:
                 ch = await self.bot.fetch_channel(rawreaction.channel_id)
@@ -90,10 +93,8 @@ class ReactorCog(commands.Cog):
 
 
 def setup(bot: commands.bot.BotBase):
-    print("cogs.reactor.setup")
     bot.add_cog(ReactorCog(bot))
 
 
 def teardown(bot: commands.bot.BotBase):
-    print("cogs.reactor.teardown")
     bot.remove_cog("ReactorCog")
