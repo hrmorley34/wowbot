@@ -19,7 +19,7 @@ class ReactorCog(commands.Cog):
         em = discord.Embed(title="React here to play sound!")
         return em
 
-    def __init__(self, bot: discord.client.Client):
+    def __init__(self, bot: commands.bot.BotBase):
         self.bot = bot
         self.guilds = JsonFileDict("jsons/reactionguilds.json")
 

@@ -7,10 +7,10 @@ import random
 
 
 class BaseVoiceCog(commands.Cog):
-    bot: discord.client.Client
+    bot: commands.bot.BotBase
     soundcommands: list = None
 
-    def __init__(self, bot: discord.client.Client):
+    def __init__(self, bot: commands.bot.BotBase):
         self.bot = bot
 
     def __repr__(self):
