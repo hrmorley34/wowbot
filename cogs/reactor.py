@@ -49,11 +49,27 @@ class ReactorCog(commands.Cog):
                 for r in msg.reactions:
                     if r.me:
                         await msg.remove_reaction(r, self.bot.user)
-            except:
+            except Exception:
                 traceback.print_exc()
 
         for reaction in self.reactionmap.keys():
             await message.add_reaction(reaction)
+
+    @reaction.command()
+    async def remove(self, ctx):
+        " Remove this guild's reactable message "
+        prev = self.guilds.get(ctx.guild.id)
+
+        if prev is not None:
+            del self.guilds[ctx.guild.id]
+
+            ch = self.bot.get_channel(prev["channel"])
+            if ch is None:
+                ch = await self.bot.fetch_channel(prev["channel"])
+            msg = await ch.fetch_message(prev["message"])
+            for r in msg.reactions:
+                if r.me:
+                    await msg.remove_reaction(r, self.bot.user)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, rawreaction):

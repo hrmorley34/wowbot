@@ -20,7 +20,8 @@ async def on_ready():
 bot.load_extension("cogs")
 
 
-@bot.command(hidden=True)
+@bot.command()
+@commands.is_owner()
 async def reload(ctx):
     bot.reload_extension("cogs")
     print("Reloaded")
@@ -36,6 +37,7 @@ async def reload(ctx):
 
 with open("client_data.json", "r") as f:
     client_data = json.load(f)
+    bot.owner_ids = set(client_data.get("owner_ids", []))
 
 try:
     bot.loop.run_until_complete(bot.start(client_data["token"]))
