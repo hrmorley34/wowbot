@@ -10,9 +10,11 @@ class ReactorCog(commands.Cog):
     bot: commands.bot.BotBase
 
     guilds: Mapping  # guild -> {"channel": <id>, "message": <id>}
-    reactionmap: Mapping = {
-        "\U0001F62E": "wow",  # face with open mouth
-        "\U0001F480": "death",  # skull
+    reactionmap: Mapping = {  # mapping of (False, <unicode>) or (True, <emojiid>) -> <soundname> or "join" or "leave"
+        (True, 801507645491249202): "wow",  # 'wow'
+        (False, "\U0001F480"): "death",  # skull
+        (False, "\U0001F1FA"): "uhoh",  # regional indicator U
+        (False, "\U0001F6AA"): "leave",  # door
     }
 
     def embed(self, ctx) -> discord.Embed:
@@ -29,7 +31,7 @@ class ReactorCog(commands.Cog):
     @commands.group(aliases=["react"])
     async def reaction(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.send("No subcommand given!")
+            await ctx.send("No subcommand given!", delete_after=4)
 
     @reaction.command()
     async def here(self, ctx):
@@ -52,8 +54,15 @@ class ReactorCog(commands.Cog):
             except Exception:
                 traceback.print_exc()
 
-        for reaction in self.reactionmap.keys():
-            await message.add_reaction(reaction)
+        await self.add_reactions(message)
+
+    async def add_reactions(self, message):
+        for b, em in self.reactionmap.keys():
+            if b:
+                emoji = self.bot.get_emoji(em)
+                await message.add_reaction(emoji)
+            else:
+                await message.add_reaction(em)
 
     @reaction.command()
     async def remove(self, ctx):
@@ -71,6 +80,37 @@ class ReactorCog(commands.Cog):
                 if r.me:
                     await msg.remove_reaction(r, self.bot.user)
 
+            try:
+                # \N{White heavy check mark}
+                await ctx.message.add_reaction("\u2705")
+            except discord.Forbidden:
+                pass  # it doesn't matter too much
+
+    @reaction.command(aliases=["reset"])
+    async def reload(self, ctx):
+        " Reset the reactions "
+        gdata = self.guilds.get(ctx.guild.id)
+
+        if gdata is None:
+            await ctx.send("There's no message in this guild!", delete_after=4)
+            return
+
+        ch = self.bot.get_channel(gdata["channel"])
+        if ch is None:
+            ch = await self.bot.fetch_channel(gdata["channel"])
+        msg = await ch.fetch_message(gdata["message"])
+        for r in msg.reactions:
+            if r.me:
+                await msg.remove_reaction(r, self.bot.user)
+
+        await self.add_reactions(msg)
+
+        try:
+            # \N{White heavy check mark}
+            await ctx.message.add_reaction("\u2705")
+        except discord.Forbidden:
+            pass  # it doesn't matter too much
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, rawreaction):
         if rawreaction.user_id == self.bot.user.id:
@@ -83,10 +123,21 @@ class ReactorCog(commands.Cog):
             and self.guilds[guildid].get("channel") == rawreaction.channel_id
             and self.guilds[guildid].get("message") == rawreaction.message_id
         ):
-            sound = self.reactionmap.get(rawreaction.emoji.name)
+            if rawreaction.emoji.id is None:
+                sound = self.reactionmap.get((False, rawreaction.emoji.name))
+            else:
+                sound = self.reactionmap.get((True, rawreaction.emoji.id))
+            if sound is None:
+                return
 
             vcog = self.bot.get_cog("VoiceCog")
-            soundcmd = vcog.soundcommands.get(sound)
+            if sound == "join":
+                # use uninitialised form to keep in line with the list
+                soundcmd = type(vcog).join_voice
+            elif sound == "leave":
+                soundcmd = type(vcog).leave_voice
+            else:
+                soundcmd = vcog.soundcommands.get(sound)
 
             guild = self.bot.get_guild(guildid)
             member = rawreaction.member
