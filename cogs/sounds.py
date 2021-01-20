@@ -40,13 +40,13 @@ class BaseVoiceCog(commands.Cog):
             if ctx.voice_client and not ctx.voice_client.is_playing():
                 await ctx.voice_client.move_to(voicestate.channel)
             else:
-                await ctx.send("Sorry, I'm busy right now.")
+                await ctx.send("Sorry, I'm busy right now.", delete_after=4)
                 return False
         return True
 
     async def play_random(self, ctx, filenames):
         if len(filenames) <= 0:
-            await ctx.send("I can't find any files...")
+            await ctx.send("I can't find any files...", delete_after=4)
             return
         fname = random.choice(filenames)
         source = await discord.FFmpegOpusAudio.from_probe(fname)
