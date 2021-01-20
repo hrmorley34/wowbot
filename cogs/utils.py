@@ -84,3 +84,47 @@ class PartialContext(commands.Context):
 
     async def send(*args, **kwargs):
         pass
+
+
+class ExpandingCodeblock:
+    ctx: commands.Context
+    prefix: str
+    suffix: str
+    maxlen: int
+    _contents: list
+    messages: list
+
+    def __init__(self, ctx=None, maxlen=3000, prefix="```\n", suffix="\n```"):
+        self.ctx = ctx
+        self.prefix = prefix
+        self.suffix = suffix
+        self.maxlen = maxlen
+        self._contents = []
+        self.messages = []
+
+    def append(self, text):
+        if len(self._contents) <= 0:
+            self._contents.append("")
+
+        for line in text.splitlines(True):
+            if len(self._contents[-1]) + len(line) > self.maxlen:
+                self._contents.append(line)
+            else:
+                self._contents[-1] += line
+
+    def content_to_message_args(self, content: str, edit=False) -> dict:
+        return {"content": self.prefix + content.strip("\n") + self.suffix}
+        # Could instead return {"embed": discord.Embed(...)}
+
+    async def update_messages(self, ctx=None):
+        ctx = ctx or self.ctx
+        if ctx is None:
+            raise TypeError("No context supplied")
+
+        start = max(len(self.messages) - 1, 0)  # last item index
+        for i, cont in enumerate(self._contents[start:], start):
+            if i < len(self.messages):
+                await self.messages[i].edit(**self.content_to_message_args(cont, edit=True))
+            else:
+                m = await ctx.send(**self.content_to_message_args(cont, edit=False))
+                self.messages.append(m)

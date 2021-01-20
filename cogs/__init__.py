@@ -41,7 +41,7 @@ class InitCog(commands.Cog):
 
 def setup(bot):
     bot.add_cog(InitCog(bot))
-    for ext in ["cogs.sounds", "cogs.reactor"]:
+    for ext in ["cogs.sounds", "cogs.reactor", "cogs.cmds"]:
         try:
             bot.load_extension(ext)
         except commands.ExtensionAlreadyLoaded:
