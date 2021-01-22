@@ -49,13 +49,14 @@ class ReactorCog(commands.Cog):
     @commands.group(aliases=["react"])
     async def reaction(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.send("No subcommand given!", delete_after=4)
+            # send this command's help (listing subcommands)
+            await ctx.send_help(ctx.command)
 
     @reaction.command()
     async def here(self, ctx):
         " Create a reactable message in the current text channel "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!")
+            await ctx.send("You aren't in a server!", delete_after=4)
             return
 
         message = await ctx.send(embed=self.embed(ctx))
@@ -83,7 +84,7 @@ class ReactorCog(commands.Cog):
     async def remove(self, ctx):
         " Remove this server's reactable message "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!")
+            await ctx.send("You aren't in a server!", delete_after=4)
             return
 
         prev = self.guilds.get(ctx.guild.id)
@@ -105,7 +106,7 @@ class ReactorCog(commands.Cog):
     async def reload(self, ctx):
         " Reset the reactions "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!")
+            await ctx.send("You aren't in a server!", delete_after=4)
             return
 
         gdata = self.guilds.get(ctx.guild.id)
