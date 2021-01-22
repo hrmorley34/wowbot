@@ -20,6 +20,10 @@ class BaseVoiceCog(commands.Cog):
 
     @commands.command(name="join")
     async def join_voice(self, ctx):
+        if ctx.guild is None:
+            ctx.send("Sorry, I can't do that outside of servers.")
+            return False
+
         voicestate = ctx.author.voice
 
         if voicestate is None:
