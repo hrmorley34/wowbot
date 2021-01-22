@@ -1,6 +1,5 @@
 from discord.ext import commands
 from .utils import ExpandingCodeblock
-
 import asyncio
 import re
 
@@ -47,8 +46,8 @@ async def _update_codeblock(cb: ExpandingCodeblock, task: asyncio.Task, wait: fl
 
 
 async def run_command(args, output: ExpandingCodeblock, updatefrequency: float = 0.1):
-    runtask = asyncio.Task(_run_command(args, output=output))
-    updatetask = asyncio.Task(_update_codeblock(
+    runtask = asyncio.create_task(_run_command(args, output=output))
+    updatetask = asyncio.create_task(_update_codeblock(
         output, task=runtask, wait=updatefrequency))
     # Run both in parallel
     await asyncio.gather(runtask, updatetask)

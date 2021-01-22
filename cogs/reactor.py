@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
-from .utils import JsonFileDict, PartialContext
-
+from .utils import JsonFileDict, PartialContext, react_output
 from collections.abc import Mapping
 import traceback
+import asyncio
 
 
 class ReactorCog(commands.Cog):
@@ -28,6 +28,24 @@ class ReactorCog(commands.Cog):
     def __repr__(self):
         return "<{}>".format(type(self).__name__)
 
+    async def add_reactions(self, message: discord.Message):
+        tasks = []
+        for b, em in self.reactionmap.keys():
+            if b:
+                emoji = self.bot.get_emoji(em)
+                tasks.append(asyncio.create_task(message.add_reaction(emoji)))
+            else:
+                tasks.append(asyncio.create_task(message.add_reaction(em)))
+        await asyncio.gather(*tasks)
+
+    async def remove_reactions(self, message: discord.Message):
+        tasks = []
+        for r in message.reactions:
+            if r.me:
+                tasks.append(asyncio.create_task(
+                    message.remove_reaction(r, self.bot.user)))
+        await asyncio.gather(*tasks)
+
     @commands.group(aliases=["react"])
     async def reaction(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -42,27 +60,20 @@ class ReactorCog(commands.Cog):
         self.guilds[message.guild.id] = {
             "channel": message.channel.id, "message": message.id}
 
+        tasks = [asyncio.create_task(self.add_reactions(message))]
         if prev is not None:
             try:
                 ch = message.guild.get_channel(prev["channel"])
                 if ch is None:
                     ch = await self.bot.fetch_channel(prev["channel"])
                 msg = await ch.fetch_message(prev["message"])
-                for r in msg.reactions:
-                    if r.me:
-                        await msg.remove_reaction(r, self.bot.user)
+                tasks.append(asyncio.create_task(self.remove_reactions(msg)))
             except Exception:
                 traceback.print_exc()
 
-        await self.add_reactions(message)
+        await asyncio.gather(*tasks)
 
-    async def add_reactions(self, message):
-        for b, em in self.reactionmap.keys():
-            if b:
-                emoji = self.bot.get_emoji(em)
-                await message.add_reaction(emoji)
-            else:
-                await message.add_reaction(em)
+        await react_output(self.bot, ctx.message)
 
     @reaction.command()
     async def remove(self, ctx):
@@ -80,11 +91,7 @@ class ReactorCog(commands.Cog):
                 if r.me:
                     await msg.remove_reaction(r, self.bot.user)
 
-            try:
-                # \N{White heavy check mark}
-                await ctx.message.add_reaction("\u2705")
-            except discord.Forbidden:
-                pass  # it doesn't matter too much
+            await react_output(self.bot, ctx.message)
 
     @reaction.command(aliases=["reset"])
     async def reload(self, ctx):
@@ -99,17 +106,11 @@ class ReactorCog(commands.Cog):
         if ch is None:
             ch = await self.bot.fetch_channel(gdata["channel"])
         msg = await ch.fetch_message(gdata["message"])
-        for r in msg.reactions:
-            if r.me:
-                await msg.remove_reaction(r, self.bot.user)
+        await self.remove_reactions(msg)
 
         await self.add_reactions(msg)
 
-        try:
-            # \N{White heavy check mark}
-            await ctx.message.add_reaction("\u2705")
-        except discord.Forbidden:
-            pass  # it doesn't matter too much
+        await react_output(self.bot, ctx.message)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, rawreaction):

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-
+from .utils import react_output
 import random
 
 
@@ -30,11 +30,7 @@ class InitCog(commands.Cog):
         self.bot.reload_extension("cogs")
         print("Reloaded")
 
-        try:
-            # \N{White heavy check mark}
-            await ctx.message.add_reaction("\u2705")
-        except discord.Forbidden:
-            pass  # it doesn't matter too much
+        await react_output(self.bot, ctx.message)
 
         await self.update_status()
 

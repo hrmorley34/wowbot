@@ -1,8 +1,10 @@
+import discord
 from discord.ext import commands
 from collections.abc import MutableMapping
 from typing import Tuple, Any
 from io import StringIO
 import contextlib
+import asyncio
 from typing import Optional
 import json
 
@@ -128,3 +130,25 @@ class ExpandingCodeblock:
             else:
                 m = await ctx.send(**self.content_to_message_args(cont, edit=False))
                 self.messages.append(m)
+
+
+async def _react_output(bot, message, emoji, wait):
+    try:
+        await message.add_reaction(emoji)
+    except discord.Forbidden:
+        pass  # it doesn't matter too much
+    else:
+        if wait is not None and wait >= 0:
+            await asyncio.sleep(wait)
+            await message.remove_reaction(emoji, bot.user)
+
+
+async def react_output(bot: discord.Client, message: discord.Message, success: bool = True, emoji=None, wait: int = 4):
+    " React to a message, and then retract the reaction "
+    if emoji is None:
+        if success:
+            emoji = "\u2705"  # \N{White heavy check mark}
+        else:
+            emoji = "\u274C"  # \N{Cross mark}
+    # schedule in the background
+    return asyncio.create_task(_react_output(bot, message, emoji, wait))
