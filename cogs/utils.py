@@ -96,7 +96,7 @@ class ExpandingCodeblock:
     _contents: list
     messages: list
 
-    def __init__(self, ctx=None, maxlen=3000, prefix="```\n", suffix="\n```"):
+    def __init__(self, ctx=None, maxlen=1800, prefix="```\n", suffix="\n```"):
         self.ctx = ctx
         self.prefix = prefix
         self.suffix = suffix
