@@ -52,5 +52,25 @@
   "a": {
     "files": [{"filename": "sounds/a.ogg"}],
     "commandkwargs": {"hidden": true}
+  },
+  "guh": {
+    "files": [
+      {"glob": "sounds/guh-*.ogg", "weight": 24},
+      {"glob": "sounds/guhk-*.ogg", "weight": 1}
+    ],
+    "commandkwargs": {"hidden": true}
+  },
+  "hic": {
+    "files": [{"glob": "sounds/hic-*.ogg"}],
+    "commandkwargs": {"hidden": true}
+  },
+  "ohimdie": {
+    "aliases": ["ohimdiethankyouforever", "thankyouforever"],
+    "files": [{"filename": "sounds/oh im die thank you forever.ogg"}],
+    "commandkwargs": {"hidden": true}
+  },
+  "how": {
+    "aliases": ["what", "how?", "what?", "earthbound"],
+    "files": [{"filename": "sounds/earthbound-how.ogg"}]
   }
 }
