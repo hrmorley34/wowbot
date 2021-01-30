@@ -72,5 +72,19 @@
   "how": {
     "aliases": ["what", "how?", "what?", "earthbound"],
     "files": [{"filename": "sounds/earthbound-how.ogg"}]
+  },
+  "iapprove": {
+    "aliases": ["approve"],
+    "files": [{"glob": "sounds/iapprove-*.ogg"}],
+    "commandkwargs": {"hidden": true}
+  },
+  "imhorny": {
+    "aliases": ["horny", "i'mhorny"],
+    "files": [
+      {"glob": "sounds/imhorny-01.ogg", "weight": 15},
+      {"glob": "sounds/imhorny-02.ogg", "weight": 9},
+      {"glob": "sounds/imhorny-ame.ogg", "weight": 1}
+    ],
+    "commandkwargs": {"hidden": true}
   }
 }
