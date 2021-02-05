@@ -86,5 +86,9 @@
       {"glob": "sounds/imhorny-ame.ogg", "weight": 1}
     ],
     "commandkwargs": {"hidden": true}
+  },
+  "wogothim": {
+    "aliases": ["wegottem", "gottem", "gothim", "ladiesandgentlemen", "ladiesandgentlemenwegothim", "ladiesandgentlemenwegotten"],
+    "files": [{"filename": "sounds/ladies and gentlemen we got him.ogg"}]
   }
 }
