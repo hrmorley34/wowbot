@@ -90,5 +90,9 @@
   "wogothim": {
     "aliases": ["wegottem", "gottem", "gothim", "ladiesandgentlemen", "ladiesandgentlemenwegothim", "ladiesandgentlemenwegotten"],
     "files": [{"filename": "sounds/ladies and gentlemen we got him.ogg"}]
+  },
+  "assaultontheears": {
+    "aliases": ["assault", "earassault"],
+    "files": [{"filename": "sounds/assault.ogg"}]
   }
 }
