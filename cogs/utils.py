@@ -75,17 +75,23 @@ class JsonFileDict(MutableMapping):
             dump(data)
 
 
+async def asyncnull(*args, **kwargs):
+    pass
+
+
 class PartialContext(commands.Context):
+    _attrs = {}
+
+    def __getattribute__(self, k):
+        if k[0] == "_":
+            return super().__getattribute__(k)
+        elif k in self._attrs:
+            return self._attrs[k]
+        else:
+            return super().__getattribute__(k)
+
     def __init__(self, **attrs):
-        for k, v in attrs.items():
-            setattr(self, k, v)
-
-    author = None
-    channel = None
-    guild = None
-
-    async def send(*args, **kwargs):
-        pass
+        self._attrs = attrs
 
 
 class ExpandingCodeblock:

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .utils import JsonFileDict, PartialContext, react_output
+from .utils import JsonFileDict, PartialContext, asyncnull, react_output
 from collections.abc import Mapping
 import traceback
 import asyncio
@@ -153,7 +153,7 @@ class ReactorCog(commands.Cog):
             else:
                 soundcmd = vcog.soundcommands.get(sound)
 
-            guild = self.bot.get_guild(guildid)
+            # guild = self.bot.get_guild(guildid)
             member = rawreaction.member
             # member = guild.get_member(rawreaction.user_id)
             # if member is None:
@@ -163,8 +163,8 @@ class ReactorCog(commands.Cog):
                 ch = await self.bot.fetch_channel(rawreaction.channel_id)
             msg = await ch.fetch_message(rawreaction.message_id)
 
-            ctx = PartialContext(
-                author=member, guild=guild, channel=ch, message=msg, bot=self.bot, prefix=self.bot.command_prefix)
+            ctx = PartialContext(send=asyncnull, author=member, message=msg,
+                                 bot=self.bot, prefix=self.bot.command_prefix)
 
             try:
                 await msg.remove_reaction(rawreaction.emoji, member)
