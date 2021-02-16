@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .utils import JsonFileDict, PartialContext, asyncnull, react_output
+from .utils import JsonFileDict, PartialContext, react_output
 from collections.abc import Mapping
 import traceback
 import asyncio
@@ -144,17 +144,8 @@ class ReactorCog(commands.Cog):
             if sound is None:
                 return
 
-            vcog = self.bot.get_cog("VoiceCog")
-            if sound == "join":
-                # use uninitialised form to keep in line with the list
-                soundcmd = type(vcog).join_voice
-            elif sound == "leave":
-                soundcmd = type(vcog).leave_voice
-            else:
-                soundcmd = vcog.soundcommands.get(sound)
-
             # guild = self.bot.get_guild(guildid)
-            member = rawreaction.member
+            member: discord.Member = rawreaction.member
             # member = guild.get_member(rawreaction.user_id)
             # if member is None:
             #     member = await guild.fetch_member(rawreaction.user_id)
@@ -163,14 +154,22 @@ class ReactorCog(commands.Cog):
                 ch = await self.bot.fetch_channel(rawreaction.channel_id)
             msg = await ch.fetch_message(rawreaction.message_id)
 
-            ctx = PartialContext(send=asyncnull, author=member, message=msg,
-                                 bot=self.bot, prefix=self.bot.command_prefix)
-
             try:
                 await msg.remove_reaction(rawreaction.emoji, member)
             except discord.Forbidden:
                 pass  # oh well
-            await soundcmd(vcog, ctx)
+
+            vcog = self.bot.get_cog("VoiceCog")
+            if sound == "join":
+                if member.voice is not None and member.voice.channel is not None:
+                    await vcog.join_voice_channel(member.voice.channel)
+            elif sound == "leave":
+                await vcog.leave_voice(PartialContext(voice_client=member.guild.voice_client))
+            else:
+                soundcmd = vcog.soundcommands.get(sound)
+                if member.voice is not None and member.voice.channel is not None:
+                    if await vcog.join_voice_channel(member.voice.channel):
+                        await soundcmd.play_with(member.guild.voice_client)
 
 
 def setup(bot: commands.bot.BotBase):
