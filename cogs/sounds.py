@@ -151,7 +151,7 @@ class SoundPlayerCommand(commands.Command):
 
 
 def VoiceCog(bot: commands.bot.BotBase) -> BaseVoiceCog:
-    with open("sounds/sounds.json") as f:
+    with open("jsons/sounds.json") as f:
         sounds_json = json.load(f)
 
     commands = {}
