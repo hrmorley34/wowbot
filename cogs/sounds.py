@@ -66,7 +66,8 @@ class BaseVoiceCog(commands.Cog):
 
     @commands.command(name="leave", aliases=["stop"])
     async def leave_voice(self, ctx):
-        await ctx.voice_client.disconnect()
+        if ctx.voice_client is not None:
+            await ctx.voice_client.disconnect()
 
     @commands.is_owner()
     @commands.command(name="trigger")
