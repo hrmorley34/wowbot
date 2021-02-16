@@ -87,8 +87,8 @@
     ],
     "commandkwargs": {"hidden": true}
   },
-  "wogothim": {
-    "aliases": ["wegottem", "gottem", "gothim", "ladiesandgentlemen", "ladiesandgentlemenwegothim", "ladiesandgentlemenwegotten"],
+  "wegothim": {
+    "aliases": ["wegottem", "wegotem", "gotem", "gottem", "gothim", "ladiesandgentlemen", "ladiesandgentlemenwegothim", "ladiesandgentlemenwegotten"],
     "files": [{"filename": "sounds/ladies and gentlemen we got him.ogg"}]
   },
   "assaultontheears": {
