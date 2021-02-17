@@ -94,5 +94,9 @@
   "assaultontheears": {
     "aliases": ["assault", "earassault"],
     "files": [{"filename": "sounds/assault.ogg"}]
+  },
+  "dontgetit": {
+    "aliases": ["don'tgetit", "idontgetit", "idon'tgetit"],
+    "files": [{"filename": "sounds/dontgetit.ogg"}]
   }
 }
