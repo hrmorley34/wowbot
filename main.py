@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 from discord.ext import commands
+from discord_slash import SlashCommand
 import json
 
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("&"))
+slash = SlashCommand(bot, override_type=True)
+bot._slash_handler = slash
 
 
 bot.load_extension("cogs")
