@@ -73,7 +73,7 @@ class BaseVoiceCog(commands.Cog):
     @commands.command(name="trigger")
     async def trigger(self, ctx: commands.Context, cmd: str, where: Union[discord.VoiceChannel, discord.Guild, None] = None):
         if cmd not in self.soundcommands:
-            await ctx.send(f"Unrecognised command: {cmd}")
+            await ctx.send(f"Unrecognised command: {cmd}", delete_after=4)
             return
         cmd = self.soundcommands[cmd]
 
