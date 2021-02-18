@@ -98,5 +98,23 @@
   "dontgetit": {
     "aliases": ["don'tgetit", "idontgetit", "idon'tgetit"],
     "files": [{"filename": "sounds/dontgetit.ogg"}]
+  },
+  "nope": {
+    "aliases": ["no", "koronenope", "koroneno"],
+    "files": [
+      {"glob": "sounds/korone-nope*.ogg", "weight": 14},
+      {"filename": "sounds/korone-nononononope.ogg", "weight": 1}
+    ],
+    "commandkwargs": {"hidden": true}
+  },
+  "yes": {
+    "aliases": ["myes", "mmyes", "mmmyes", "koroneyes"],
+    "files": [{"filename": "sounds/korone-mmyes.ogg"}],
+    "commandkwargs": {"hidden": true}
+  },
+  "sure": {
+    "aliases": ["koronesure"],
+    "files": [{"filename": "sounds/korone-sure.ogg"}],
+    "commandkwargs": {"hidden": true}
   }
 }
