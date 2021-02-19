@@ -25,7 +25,7 @@ class InitCog(commands.Cog):
         await self.update_status()
 
         if hasattr(self.bot, "_slash_handler"):
-            self.bot.loop.create_task(await self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+            self.bot.loop.create_task(self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
     async def _reload(self):
         self.bot.reload_extension("cogs")
@@ -34,7 +34,7 @@ class InitCog(commands.Cog):
         await self.update_status()
 
         if hasattr(self.bot, "_slash_handler"):
-            self.bot.loop.create_task(await self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+            self.bot.loop.create_task(self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
     @commands.command(name="reload")
     @commands.is_owner()
