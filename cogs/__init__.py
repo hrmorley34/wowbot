@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from .utils import react_output
+from typing import Optional
+import platform
 import random
 
 
@@ -25,7 +27,8 @@ class InitCog(commands.Cog):
         await self.update_status()
 
         if hasattr(self.bot, "_slash_handler"):
-            self.bot.loop.create_task(self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+            self.bot.loop.create_task(
+                self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
     async def _reload(self):
         self.bot.reload_extension("cogs")
@@ -34,7 +37,8 @@ class InitCog(commands.Cog):
         await self.update_status()
 
         if hasattr(self.bot, "_slash_handler"):
-            self.bot.loop.create_task(self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+            self.bot.loop.create_task(
+                self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
     @commands.command(name="reload")
     @commands.is_owner()
@@ -43,9 +47,44 @@ class InitCog(commands.Cog):
 
         await react_output(self.bot, ctx.message)
 
+    @commands.command(name="suspend", aliases=["^z", "^Z"])
+    @commands.is_owner()
+    async def suspend(self, ctx, *, plt: Optional[str] = None):
+        if plt:
+            if platform.node().lower() != plt.lower():
+                return
+        else:
+            await ctx.send(platform.node())
+            return
+
+        print("Suspending...")
+
+        OLD_HELP = self.bot.help_command
+        for name in list(self.bot.extensions):
+            self.bot.unload_extension(name)
+        self.bot.help_command = None
+
+        @self.bot.command(name="unsuspend", aliases=["fg", "bg", "start"])
+        @commands.is_owner()
+        async def unsuspend(ctx):
+            print("Unsuspending...")
+            ctx.bot.help_command = OLD_HELP
+
+            try:
+                ctx.bot.load_extension("cogs")
+            except commands.ExtensionAlreadyLoaded:
+                ctx.bot.reload_extension("cogs")
+
+            ctx.bot.remove_command(ctx.command.name)  # remove self
+            print("Hello!")
+
+        print("Done.")
+        await react_output(self.bot, ctx.message)
+
 
 def setup(bot):
     bot.add_cog(InitCog(bot))
+
     for ext in ["cogs.sounds", "cogs.reactor", "cogs.cmds", "cogs.slash"]:
         try:
             bot.load_extension(ext)
