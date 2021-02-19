@@ -24,15 +24,24 @@ class InitCog(commands.Cog):
 
         await self.update_status()
 
-    @commands.command()
-    @commands.is_owner()
-    async def reload(self, ctx):
+        if hasattr(self.bot, "_slash_handler"):
+            self.bot.loop.create_task(await self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+
+    async def _reload(self):
         self.bot.reload_extension("cogs")
         print("Reloaded")
 
-        await react_output(self.bot, ctx.message)
-
         await self.update_status()
+
+        if hasattr(self.bot, "_slash_handler"):
+            self.bot.loop.create_task(await self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
+
+    @commands.command(name="reload")
+    @commands.is_owner()
+    async def reload(self, ctx):
+        await self._reload()
+
+        await react_output(self.bot, ctx.message)
 
 
 def setup(bot):

@@ -1,14 +1,14 @@
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext, model
-# import functools
+import functools
 import string
 import re
 
 
-# GUILDS = [533622436860657664, 770744133702385734]
-
-# command = functools.partial(cog_ext.cog_slash, guild_ids=GUILDS)
-# subcommand = functools.partial(cog_ext.cog_subcommand, guild_ids=GUILDS)
+# Limit some commands' servers
+GUILDS = [533622436860657664]
+rcommand = functools.partial(cog_ext.cog_slash, guild_ids=GUILDS)
+rsubcommand = functools.partial(cog_ext.cog_subcommand, guild_ids=GUILDS)
 command = cog_ext.cog_slash
 subcommand = cog_ext.cog_subcommand
 
@@ -32,6 +32,10 @@ class BaseSlashCog(commands.Cog):
     async def leave(self, ctx: SlashContext):
         ctx.voice_client = ctx.guild.voice_client
         return await self.voicecog.leave_voice(ctx)
+
+    @rcommand(name="reload")
+    async def reload(self, ctx: SlashContext):
+        await self.bot.get_cog("InitCog")._reload()
 
     # @command(name="wow")
     # async def wow(self, ctx: SlashContext):
@@ -84,8 +88,6 @@ def SlashCog(bot: commands.bot.BotBase) -> BaseSlashCog:
 
 def setup(bot):
     bot.add_cog(SlashCog(bot))
-    if hasattr(bot, "_slash_handler"):
-        bot.loop.create_task(bot._slash_handler.sync_all_commands())
 
 
 def teardown(bot: commands.bot.BotBase):
