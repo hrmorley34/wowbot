@@ -26,7 +26,7 @@ class InitCog(commands.Cog):
 
         await self.update_status()
 
-        if hasattr(self.bot, "_slash_handler"):
+        if getattr(self.bot, "_slash_handler", None):
             self.bot.loop.create_task(
                 self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
@@ -36,7 +36,7 @@ class InitCog(commands.Cog):
 
         await self.update_status()
 
-        if hasattr(self.bot, "_slash_handler"):
+        if getattr(self.bot, "_slash_handler", None):
             self.bot.loop.create_task(
                 self.bot._slash_handler.sync_all_commands(delete_from_unused_guilds=True))
 
