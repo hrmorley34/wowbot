@@ -100,8 +100,16 @@ async def soundplayer_callback(self: BaseVoiceCog, ctx: commands.Context):
     if await self.join_voice(ctx):
         await ctx.command.play_with(ctx.voice_client)
 
+    if getattr(ctx.command, "sound_autodelete", False):
+        try:
+            await ctx.message.delete()
+        except discord.HTTPException:  # includes Forbidden, NotFound
+            pass  # fail silently
+
 
 class SoundPlayerCommand(commands.Command):
+    sound_autodelete: bool = True  # should automatically delete the message on trigger?
+
     def __init__(self, name: str, data: dict):
         self.sound_name = name
         self.sound_data = data
