@@ -116,5 +116,9 @@
     "aliases": ["koronesure"],
     "files": [{"filename": "sounds/korone-sure.ogg"}],
     "commandkwargs": {"hidden": true}
+  },
+  "impostor": {
+    "aliases": ["sus", "amongus", "impostoramongus"],
+    "files": [{"filename": "sounds/amongus-rolereveal.ogg"}]
   }
 }
