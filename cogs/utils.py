@@ -158,3 +158,7 @@ async def react_output(bot: discord.Client, message: discord.Message, success: b
             emoji = "\u274C"  # \N{Cross mark}
     # schedule in the background
     return asyncio.create_task(_react_output(bot, message, emoji, wait))
+
+
+class Problem(commands.CommandError):
+    pass

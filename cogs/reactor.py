@@ -4,6 +4,7 @@ from .utils import JsonFileDict, PartialContext, react_output
 from collections.abc import Mapping
 import traceback
 import asyncio
+from .utils import Problem
 
 
 class ReactorCog(commands.Cog):
@@ -28,6 +29,15 @@ class ReactorCog(commands.Cog):
     def __repr__(self):
         return "<{}>".format(type(self).__name__)
 
+    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, Problem):
+            await ctx.send("\n".join(map(str, error.args)), delete_after=4)
+            return
+        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
+            await ctx.send("You need to be in a guild to do that!", delete_after=4)
+            return
+        traceback.print_exc()
+
     async def add_reactions(self, message: discord.Message):
         tasks = []
         for b, em in self.reactionmap.keys():
@@ -46,6 +56,7 @@ class ReactorCog(commands.Cog):
                     message.remove_reaction(r, self.bot.user)))
         await asyncio.gather(*tasks)
 
+    @commands.guild_only()
     @commands.group(aliases=["react"])
     async def reaction(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -56,8 +67,7 @@ class ReactorCog(commands.Cog):
     async def here(self, ctx):
         " Create a reactable message in the current text channel "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!", delete_after=4)
-            return
+            raise Problem("You aren't in a server!")
 
         message = await ctx.send(embed=self.embed(ctx))
 
@@ -84,8 +94,7 @@ class ReactorCog(commands.Cog):
     async def remove(self, ctx):
         " Remove this server's reactable message "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!", delete_after=4)
-            return
+            raise Problem("You aren't in a server!")
 
         prev = self.guilds.get(ctx.guild.id)
 
@@ -106,14 +115,12 @@ class ReactorCog(commands.Cog):
     async def reload(self, ctx):
         " Reset the reactions "
         if ctx.guild is None:
-            await ctx.send("You aren't in a server!", delete_after=4)
-            return
+            raise Problem("You aren't in a server!")
 
         gdata = self.guilds.get(ctx.guild.id)
 
         if gdata is None:
-            await ctx.send("There's no message in this server!", delete_after=4)
-            return
+            raise Problem("There's no message in this server!")
 
         ch = self.bot.get_channel(gdata["channel"])
         if ch is None:

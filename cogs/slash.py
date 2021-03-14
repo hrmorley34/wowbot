@@ -3,6 +3,8 @@ from discord_slash import cog_ext, SlashContext, model
 import functools
 import string
 import re
+import traceback
+from .utils import Problem
 
 
 # Limit some commands' servers
@@ -23,6 +25,13 @@ class BaseSlashCog(commands.Cog):
     def voicecog(self):
         return self.bot.get_cog("VoiceCog")
 
+    @commands.Cog.listener()
+    async def on_slash_command_error(self, ctx: SlashContext, error: commands.CommandError):
+        if isinstance(error, Problem):
+            await ctx.send("\n".join(map(str, error.args)), hidden=True, delete_after=4)
+            return
+        traceback.print_exc()
+
     @command(name="join")
     async def join(self, ctx: SlashContext):
         await ctx.respond(eat=True)
@@ -41,7 +50,7 @@ class BaseSlashCog(commands.Cog):
     async def reload(self, ctx: SlashContext):
         await self.bot.get_cog("InitCog")._reload()
 
-        await ctx.respond()
+        await ctx.respond(eat=False)
 
 
 SLASHCHARS = string.ascii_letters + string.digits + "-_"

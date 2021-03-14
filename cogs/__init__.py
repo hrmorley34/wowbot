@@ -26,9 +26,8 @@ class InitCog(commands.Cog):
 
         await self.update_status()
 
-        if getattr(self.bot, "slash", None):
-            self.bot.loop.create_task(
-                self.bot.slash.sync_all_commands(delete_from_unused_guilds=True))
+        self.bot.loop.create_task(
+            self.bot.slash.sync_all_commands(delete_from_unused_guilds=True))
 
     async def _reload(self):
         self.bot.reload_extension("cogs")
@@ -38,8 +37,6 @@ class InitCog(commands.Cog):
 
         self.bot.loop.create_task(
             self.bot.slash.sync_all_commands(delete_from_unused_guilds=True))
-        print(await self.bot.slash.to_dict())
-        print(len((await self.bot.slash.to_dict())["guild"][533622436860657664]))
 
     @commands.command(name="reload")
     @commands.is_owner()
