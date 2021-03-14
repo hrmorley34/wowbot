@@ -6,7 +6,7 @@ import re
 
 
 # Limit some commands' servers
-GUILDS = [533622436860657664]
+GUILDS = [533622436860657664, 690860332322914305]
 rcommand = functools.partial(cog_ext.cog_slash, guild_ids=GUILDS)
 rsubcommand = functools.partial(cog_ext.cog_subcommand, guild_ids=GUILDS)
 command = cog_ext.cog_slash
@@ -25,17 +25,17 @@ class BaseSlashCog(commands.Cog):
 
     @command(name="join")
     async def join(self, ctx: SlashContext):
+        await ctx.respond(eat=True)
+
         ctx.voice_client = ctx.guild.voice_client
         return await self.voicecog.join_voice(ctx)
 
-        await ctx.respond(eat=True)
-
     @command(name="leave")
     async def leave(self, ctx: SlashContext):
+        await ctx.respond(eat=True)
+
         ctx.voice_client = ctx.guild.voice_client
         return await self.voicecog.leave_voice(ctx)
-
-        await ctx.respond(eat=True)
 
     @rcommand(name="reload")
     async def reload(self, ctx: SlashContext):
