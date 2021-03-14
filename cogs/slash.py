@@ -28,20 +28,20 @@ class BaseSlashCog(commands.Cog):
         ctx.voice_client = ctx.guild.voice_client
         return await self.voicecog.join_voice(ctx)
 
-        ctx.respond()
+        await ctx.respond(eat=True)
 
     @command(name="leave")
     async def leave(self, ctx: SlashContext):
         ctx.voice_client = ctx.guild.voice_client
         return await self.voicecog.leave_voice(ctx)
 
-        ctx.respond()
+        await ctx.respond(eat=True)
 
     @rcommand(name="reload")
     async def reload(self, ctx: SlashContext):
         await self.bot.get_cog("InitCog")._reload()
 
-        ctx.respond()
+        await ctx.respond()
 
 
 SLASHCHARS = string.ascii_letters + string.digits + "-_"
@@ -58,7 +58,7 @@ def audio_command(cmd: commands.Command, base=None) -> model.CommandObject:
             name = "".join(c for c in cmd.name if c in SLASHCHARS)[:32]
 
     async def player(self, ctx: SlashContext):
-        ctx.respond()  # prevent `failed`
+        await ctx.respond(eat=True)  # prevent `failed`
 
         ctx.voice_client = ctx.guild.voice_client
         if await self.voicecog.join_voice(ctx):
