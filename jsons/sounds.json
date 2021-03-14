@@ -120,5 +120,13 @@
   "impostor": {
     "aliases": ["sus", "amongus", "impostoramongus"],
     "files": [{"filename": "sounds/amongus-rolereveal.ogg"}]
+  },
+  "whymad": {
+    "aliases": ["mad", "whyyouhavetobemad", "whyyoumad"],
+    "files": [{"filename": "sounds/why-mad.ogg"}]
+  },
+  "isonlygame": {
+    "aliases": ["onlygame", "game", "isonlygamewhymad"],
+    "files": [{"filename": "sounds/why-mad-only-game.ogg"}]
   }
 }
