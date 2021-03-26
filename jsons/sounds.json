@@ -137,7 +137,7 @@
     "aliases": ["wrong&ugly", "ugly", "you'rewrongandugly", "yourewrongandugly", "yourwrongandugly"],
     "files": [
       {"filename": "sounds/wrong-ugly.ogg", "weight": 4},
-      {"filename": "sounds/wrong-ugly-thank.ogg", "weight": 1}
+      {"filename": "sounds/wrong-ugly-thanks.ogg", "weight": 1}
     ]
   }
 }
