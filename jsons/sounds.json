@@ -128,5 +128,16 @@
   "isonlygame": {
     "aliases": ["onlygame", "game", "isonlygamewhymad"],
     "files": [{"filename": "sounds/why-mad-only-game.ogg"}]
+  },
+  "wrong": {
+    "aliases": ["you'rewrong", "yourewrong", "yourwrong"],
+    "files": [{"filename": "sounds/wrong.ogg"}]
+  },
+  "wrongandugly": {
+    "aliases": ["wrong&ugly", "ugly", "you'rewrongandugly", "yourewrongandugly", "yourwrongandugly"],
+    "files": [
+      {"filename": "sounds/wrong-ugly.ogg", "weight": 4},
+      {"filename": "sounds/wrong-ugly-thank.ogg", "weight": 1}
+    ]
   }
 }
