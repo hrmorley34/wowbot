@@ -28,29 +28,33 @@ class BaseSlashCog(commands.Cog):
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx: SlashContext, error: commands.CommandError):
         if isinstance(error, Problem):
-            await ctx.send("\n".join(map(str, error.args)), hidden=True, delete_after=4)
+            await ctx.send("\n".join(map(str, error.args)), hidden=True)
             return
         traceback.print_exc()
 
     @command(name="join")
     async def join(self, ctx: SlashContext):
-        await ctx.respond(eat=True)
+        await ctx.defer(hidden=True)
 
         ctx.voice_client = ctx.guild.voice_client
-        return await self.voicecog.join_voice(ctx)
+        await self.voicecog.join_voice(ctx)
+        await ctx.send("Hello!", hidden=True)
 
     @command(name="leave")
     async def leave(self, ctx: SlashContext):
-        await ctx.respond(eat=True)
+        await ctx.defer(hidden=True)
 
         ctx.voice_client = ctx.guild.voice_client
-        return await self.voicecog.leave_voice(ctx)
+        await self.voicecog.leave_voice(ctx)
+        await ctx.send("Goodbye!", hidden=True)
 
     @rcommand(name="reload")
     async def reload(self, ctx: SlashContext):
+        await ctx.defer(hidden=True)
+
         await self.bot.get_cog("InitCog")._reload()
 
-        await ctx.respond(eat=False)
+        await ctx.send("Reloaded!", hidden=True)
 
 
 SLASHCHARS = string.ascii_letters + string.digits + "-_"
@@ -67,11 +71,12 @@ def audio_command(cmd: commands.Command, base=None) -> model.CommandObject:
             name = "".join(c for c in cmd.name if c in SLASHCHARS)[:32]
 
     async def player(self, ctx: SlashContext):
-        await ctx.respond(eat=True)  # prevent `failed`
+        await ctx.defer(hidden=True)  # prevent `failed`
 
         ctx.voice_client = ctx.guild.voice_client
         if await self.voicecog.join_voice(ctx):
             await cmd.play_with(ctx.guild.voice_client)
+        await ctx.send(name, hidden=True)
 
     if base is None:
         return command(name=name, description=cmd.description)(player)
