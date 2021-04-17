@@ -139,5 +139,9 @@
       {"filename": "sounds/wrong-ugly.ogg", "weight": 4},
       {"filename": "sounds/wrong-ugly-thanks.ogg", "weight": 1}
     ]
+  },
+  "gottabounce": {
+    "aliases": ["anywaysmybroskis", "anywaymybroskis", "anywaysbroskis", "anywaybroskis", "igottabounce", "bounce"],
+    "files": [{"filename": "sounds/anyway broskis gotta bounce.ogg"}]
   }
 }
