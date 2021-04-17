@@ -143,5 +143,9 @@
   "gottabounce": {
     "aliases": ["anywaysmybroskis", "anywaymybroskis", "anywaysbroskis", "anywaybroskis", "igottabounce", "bounce"],
     "files": [{"filename": "sounds/anyway broskis gotta bounce.ogg"}]
+  },
+  "fbiopenup": {
+    "aliases": ["fbi", "openup"],
+    "files": [{"filename": "sounds/fbi open up.ogg"}]
   }
 }
