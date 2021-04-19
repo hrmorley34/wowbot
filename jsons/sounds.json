@@ -147,5 +147,10 @@
   "fbiopenup": {
     "aliases": ["fbi", "openup"],
     "files": [{"filename": "sounds/fbi open up.ogg"}]
+  },
+  "yabe": {
+    "aliases": ["ya-be"],
+    "files": [{"filename": "sounds/yabe.ogg"}],
+    "commandkwargs": {"hidden": true}
   }
 }
