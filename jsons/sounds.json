@@ -152,5 +152,9 @@
     "aliases": ["ya-be"],
     "files": [{"filename": "sounds/yabe.ogg"}],
     "commandkwargs": {"hidden": true}
+  },
+  "congration": {
+    "aliases": ["congratulation"],
+    "files": [{"filename": "sounds/congration.ogg"}]
   }
 }
