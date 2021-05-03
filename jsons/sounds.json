@@ -156,5 +156,9 @@
   "congration": {
     "aliases": ["congratulation"],
     "files": [{"filename": "sounds/congration.ogg"}]
+  },
+  "stfuamericans": {
+    "aliases": ["americans", "american", "stfu"],
+    "files": [{"filename": "sounds/stfu-americans.opus"}]
   }
 }
