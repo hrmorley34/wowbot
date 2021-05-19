@@ -160,5 +160,16 @@
   "stfuamericans": {
     "aliases": ["americans", "american", "stfu"],
     "files": [{"filename": "sounds/stfu-americans.opus"}]
-  }
+  },
+  "die": {
+    "files": [{"filename": "sounds/korone-die.opus"}],
+    "commandkwargs": {"hidden": true}
+  },
+  "youaredie": {
+    "files": [
+      {"filename": "sounds/korone-youaredie-1.opus", "weight": 5},
+      {"filename": "sounds/korone-youaredie-2.opus", "weight": 4},
+      {"filename": "sounds/korone-youaredie-die-die.opus", "weight": 1}
+    ],
+    "commandkwargs": {"hidden": true}
 }
