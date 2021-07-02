@@ -64,7 +64,7 @@ class CmdsCog(commands.Cog):
     @commands.is_owner()
     async def gitpull(self, ctx):
         codeblock = ExpandingCodeblock(ctx=ctx)
-        await run_command(("git", "pull"), output=codeblock)
+        await run_command(("git", "pull", "--recurse-submodules"), output=codeblock)
 
 
 def setup(bot: commands.bot.BotBase):
