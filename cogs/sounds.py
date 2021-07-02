@@ -1,11 +1,14 @@
 import discord
 from discord.ext import commands
 import json
-import glob
+from pathlib import Path
 import random
 import traceback
-from typing import Union
+from typing import Sequence, Union
 from .utils import react_output, Problem
+
+
+SOUNDDIR = Path("./sounds")
 
 
 class BaseVoiceCog(commands.Cog):
@@ -115,6 +118,10 @@ async def soundplayer_callback(self: BaseVoiceCog, ctx: commands.Context):
 
 
 class SoundPlayerCommand(commands.Command):
+    sound_name: str
+    sound_data: dict
+    sound_arrays: Sequence[Path]
+    sound_weights: Sequence[int]
     sound_autodelete: bool = True  # should automatically delete the message on trigger
 
     def __init__(self, name: str, data: dict):
@@ -127,11 +134,11 @@ class SoundPlayerCommand(commands.Command):
         for fd in files:
             filenames = []
             if "glob" in fd.keys():
-                filenames.extend(glob.glob(fd["glob"]))
+                filenames.extend(SOUNDDIR.glob(fd["glob"]))
             if "filenames" in fd.keys():
-                filenames.extend(fd["filenames"])
+                filenames.extend(map(SOUNDDIR.joinpath, fd["filenames"]))
             if "filename" in fd.keys():
-                filenames.append(fd["filename"])
+                filenames.append(SOUNDDIR / fd["filename"])
 
             if len(filenames) >= 1:
                 arrays.append(filenames)
@@ -168,7 +175,7 @@ class SoundPlayerCommand(commands.Command):
 
 
 def VoiceCog(bot: commands.bot.BotBase) -> BaseVoiceCog:
-    with open("jsons/sounds.json") as f:
+    with open(SOUNDDIR / "sounds.json") as f:
         sounds_json = json.load(f)
 
     commands = {}
