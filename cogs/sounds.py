@@ -12,10 +12,10 @@ SOUNDDIR = Path("./sounds")
 
 
 class BaseVoiceCog(commands.Cog):
-    bot: commands.bot.BotBase
+    bot: commands.Bot
     soundcommands: dict = None
 
-    def __init__(self, bot: commands.bot.BotBase):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     def __repr__(self):
@@ -77,7 +77,7 @@ class BaseVoiceCog(commands.Cog):
 
     @commands.guild_only()
     @commands.command(name="leave", aliases=["stop"])
-    async def leave_voice(self, ctx):
+    async def leave_voice(self, ctx: commands.Context):
         if ctx.voice_client is not None:
             await ctx.voice_client.disconnect()
 
@@ -174,7 +174,7 @@ class SoundPlayerCommand(commands.Command):
         return fname
 
 
-def VoiceCog(bot: commands.bot.BotBase) -> BaseVoiceCog:
+def VoiceCog(bot: commands.Bot) -> BaseVoiceCog:
     with open(SOUNDDIR / "sounds.json") as f:
         sounds_json = json.load(f)
 
@@ -190,9 +190,9 @@ def VoiceCog(bot: commands.bot.BotBase) -> BaseVoiceCog:
     return VoiceCogT(bot)
 
 
-def setup(bot: commands.bot.BotBase):
+def setup(bot: commands.Bot):
     bot.add_cog(VoiceCog(bot))
 
 
-def teardown(bot: commands.bot.BotBase):
+def teardown(bot: commands.Bot):
     bot.remove_cog("VoiceCog")

@@ -10,9 +10,9 @@ activities = [discord.Game("wow - &wow")]
 
 
 class InitCog(commands.Cog):
-    bot: commands.bot.BotBase
+    bot: commands.Bot
 
-    def __init__(self, bot: commands.bot.BotBase):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     async def update_status(self):
@@ -40,14 +40,14 @@ class InitCog(commands.Cog):
 
     @commands.command(name="reload")
     @commands.is_owner()
-    async def reload(self, ctx):
+    async def reload(self, ctx: commands.Context):
         await self._reload()
 
         await react_output(self.bot, ctx.message)
 
     @commands.command(name="suspend", aliases=["^z", "^Z"])
     @commands.is_owner()
-    async def suspend(self, ctx, *, plt: Optional[str] = None):
+    async def suspend(self, ctx: commands.Context, *, plt: Optional[str] = None):
         if plt:
             if platform.node().lower() != plt.lower():
                 return
@@ -80,7 +80,7 @@ class InitCog(commands.Cog):
         await react_output(self.bot, ctx.message)
 
 
-def setup(bot):
+def setup(bot: commands.Bot):
     bot.add_cog(InitCog(bot))
 
     for ext in ["cogs.sounds", "cogs.reactor", "cogs.cmds", "cogs.slash"]:
@@ -90,5 +90,5 @@ def setup(bot):
             bot.reload_extension(ext)
 
 
-def teardown(bot: commands.bot.BotBase):
+def teardown(bot: commands.Bot):
     bot.remove_cog("InitCog")

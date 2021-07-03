@@ -12,7 +12,7 @@ bot.load_extension("cogs")
 
 
 with open("client_data.json", "r") as f:
-    client_data = json.load(f)
+    client_data: dict = json.load(f)
     bot.owner_ids = set(client_data.get("owner_ids", []))
 
 try:

@@ -1,28 +1,29 @@
 import discord
 from discord.ext import commands
-from .utils import JsonFileDict, PartialContext, react_output
+from .utils import JsonFileDict, PartialContext, Problem, react_output
+from typing import Literal, Tuple, Union
 from collections.abc import Mapping
 import traceback
 import asyncio
-from .utils import Problem
 
 
 class ReactorCog(commands.Cog):
-    bot: commands.bot.BotBase
+    bot: commands.Bot
 
-    guilds: Mapping  # guild -> {"channel": <id>, "message": <id>}
-    reactionmap: Mapping = {  # mapping of (False, <unicode>) or (True, <emojiid>) -> <soundname> or "join" or "leave"
+    guilds: Mapping[int, Mapping[str, int]]  # guild -> {"channel": <id>, "message": <id>}
+    # mapping of (False, <unicode>) or (True, <emojiid>) -> <soundname> or "join" or "leave"
+    reactionmap: Mapping[Union[Tuple[Literal[False], str], Tuple[Literal[True], int]], str] = {
         (True, 801507645491249202): "wow",  # 'wow'
         (False, "\U0001F480"): "death",  # skull
         (False, "\U0001F1FA"): "uhoh",  # regional indicator U
         (False, "\U0001F6AA"): "leave",  # door
     }
 
-    def embed(self, ctx) -> discord.Embed:
+    def embed(self, ctx: commands.Context) -> discord.Embed:
         em = discord.Embed(title="React here to play sound!")
         return em
 
-    def __init__(self, bot: commands.bot.BotBase):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.guilds = JsonFileDict("jsons/reactionguilds.json")
 
@@ -58,13 +59,13 @@ class ReactorCog(commands.Cog):
 
     @commands.guild_only()
     @commands.group(aliases=["react"])
-    async def reaction(self, ctx):
+    async def reaction(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:
             # send this command's help (listing subcommands)
             await ctx.send_help(ctx.command)
 
     @reaction.command()
-    async def here(self, ctx):
+    async def here(self, ctx: commands.Context):
         " Create a reactable message in the current text channel "
         if ctx.guild is None:
             raise Problem("You aren't in a server!")
@@ -91,7 +92,7 @@ class ReactorCog(commands.Cog):
         await react_output(self.bot, ctx.message)
 
     @reaction.command()
-    async def remove(self, ctx):
+    async def remove(self, ctx: commands.Context):
         " Remove this server's reactable message "
         if ctx.guild is None:
             raise Problem("You aren't in a server!")
@@ -112,7 +113,7 @@ class ReactorCog(commands.Cog):
             await react_output(self.bot, ctx.message)
 
     @reaction.command(aliases=["reset"])
-    async def reload(self, ctx):
+    async def reload(self, ctx: commands.Context):
         " Reset the reactions "
         if ctx.guild is None:
             raise Problem("You aren't in a server!")
@@ -133,7 +134,7 @@ class ReactorCog(commands.Cog):
         await react_output(self.bot, ctx.message)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, rawreaction):
+    async def on_raw_reaction_add(self, rawreaction: discord.RawReactionActionEvent):
         if rawreaction.user_id == self.bot.user.id:
             return  # ignore self, for when populating message
 
@@ -179,9 +180,9 @@ class ReactorCog(commands.Cog):
                         await soundcmd.play_with(member.guild.voice_client)
 
 
-def setup(bot: commands.bot.BotBase):
+def setup(bot: commands.Bot):
     bot.add_cog(ReactorCog(bot))
 
 
-def teardown(bot: commands.bot.BotBase):
+def teardown(bot: commands.Bot):
     bot.remove_cog("ReactorCog")

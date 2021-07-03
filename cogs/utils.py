@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from collections.abc import MutableMapping
-from typing import Tuple, Any
+from typing import MutableSequence, Tuple, Any
 from io import StringIO
 import contextlib
 import asyncio
@@ -99,10 +99,10 @@ class ExpandingCodeblock:
     prefix: str
     suffix: str
     maxlen: int
-    _contents: list
-    messages: list
+    _contents: MutableSequence[str]
+    messages: MutableSequence[discord.Message]
 
-    def __init__(self, ctx=None, maxlen=1800, prefix="```\n", suffix="\n```"):
+    def __init__(self, ctx: Optional[commands.Context] = None, maxlen: int = 1800, prefix: str = "```\n", suffix: str = "\n```"):
         self.ctx = ctx
         self.prefix = prefix
         self.suffix = suffix
@@ -110,7 +110,7 @@ class ExpandingCodeblock:
         self._contents = []
         self.messages = []
 
-    def append(self, text):
+    def append(self, text: str):
         if len(self._contents) <= 0:
             self._contents.append("")
 
@@ -120,11 +120,11 @@ class ExpandingCodeblock:
             else:
                 self._contents[-1] += line
 
-    def content_to_message_args(self, content: str, edit=False) -> dict:
+    def content_to_message_args(self, content: str, edit: bool = False) -> dict:
         return {"content": self.prefix + content.strip("\n") + self.suffix}
         # Could instead return {"embed": discord.Embed(...)}
 
-    async def update_messages(self, ctx=None):
+    async def update_messages(self, ctx: Optional[commands.Context] = None):
         ctx = ctx or self.ctx
         if ctx is None:
             raise TypeError("No context supplied")
@@ -138,7 +138,7 @@ class ExpandingCodeblock:
                 self.messages.append(m)
 
 
-async def _react_output(bot, message, emoji, wait):
+async def _react_output(bot: discord.Client, message: discord.Message, emoji, wait: int):
     try:
         await message.add_reaction(emoji)
     except discord.Forbidden:

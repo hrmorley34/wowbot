@@ -1,5 +1,6 @@
 from discord.ext import commands
 from .utils import ExpandingCodeblock
+from typing import Sequence
 import asyncio
 import re
 
@@ -28,7 +29,7 @@ def decode_output(in_: bytes, encoding=None) -> str:
     return strcut
 
 
-async def _run_command(args, output: ExpandingCodeblock):
+async def _run_command(args: Sequence[str], output: ExpandingCodeblock):
     proc = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
     rline = await proc.stdout.readline()
     while rline:
@@ -55,21 +56,21 @@ async def run_command(args, output: ExpandingCodeblock, updatefrequency: float =
 
 
 class CmdsCog(commands.Cog):
-    bot: commands.bot.BotBase
+    bot: commands.Bot
 
-    def __init__(self, bot: commands.bot.BotBase):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command()
     @commands.is_owner()
-    async def gitpull(self, ctx):
+    async def gitpull(self, ctx: commands.Context):
         codeblock = ExpandingCodeblock(ctx=ctx)
         await run_command(("git", "pull", "--recurse-submodules"), output=codeblock)
 
 
-def setup(bot: commands.bot.BotBase):
+def setup(bot: commands.Bot):
     bot.add_cog(CmdsCog(bot))
 
 
-def teardown(bot: commands.bot.BotBase):
+def teardown(bot: commands.Bot):
     bot.remove_cog("CmdsCog")

@@ -16,7 +16,7 @@ subcommand = cog_ext.cog_subcommand
 
 
 class BaseSlashCog(commands.Cog):
-    bot: commands.bot.BotBase
+    bot: commands.Bot
 
     def __init__(self, bot):
         self.bot = bot
@@ -84,7 +84,7 @@ def audio_command(cmd: commands.Command, base=None) -> model.CommandObject:
         return subcommand(base=base, name=name, description=cmd.description)(player)
 
 
-def SlashCog(bot: commands.bot.BotBase) -> BaseSlashCog:
+def SlashCog(bot: commands.Bot) -> BaseSlashCog:
     voicecog = bot.get_cog("VoiceCog")
 
     i = 0
@@ -102,9 +102,9 @@ def SlashCog(bot: commands.bot.BotBase) -> BaseSlashCog:
     return SlashCogT(bot)
 
 
-def setup(bot):
+def setup(bot: commands.Bot):
     bot.add_cog(SlashCog(bot))
 
 
-def teardown(bot: commands.bot.BotBase):
+def teardown(bot: commands.Bot):
     bot.remove_cog("SlashCog")
