@@ -1,26 +1,41 @@
+from __future__ import annotations
+
+__all__ = [
+    "Problem",
+    "asyncnull",
+    "JsonFileDict",
+    "ExpandingCodeblock",
+    "react_output",
+]
+
+import asyncio
+from collections.abc import MutableMapping
+import contextlib
 import discord
 from discord.ext import commands
-from collections.abc import MutableMapping
-from typing import MutableSequence, Tuple, Any
-from io import StringIO
-import contextlib
-import asyncio
-from typing import Optional
 import json
+from typing import Any, Callable, Dict, Generator, Iterator, KeysView, Mapping, MutableSequence, Optional, Tuple, TypeVar, ValuesView
+
+from .problem import Problem
 
 
-def _json_keyer(key):
-    return next(iter(json.loads(json.dumps({key: 0})).keys()))
+_json_keyer: Callable[[Any], str] = str
+# def _json_keyer(key: Any) -> str:
+#     return next(iter(json.loads(json.dumps({key: 0})).keys()))
 
 
-class JsonFileDict(MutableMapping):
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+
+
+class JsonFileDict(MutableMapping[KT, VT]):
     def __init__(self, file: str):
         self.file = file
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{} file={}>".format(type(self).__name__, self.file)
 
-    def _load(self) -> dict:
+    def _load(self) -> Dict[str, VT]:
         try:
             with open(self.file, "r") as f:
                 return json.load(f)
@@ -35,43 +50,43 @@ class JsonFileDict(MutableMapping):
             return None
 
     @contextlib.contextmanager
-    def _writer(self) -> Tuple[dict, StringIO]:
+    def _writer(self) -> Generator[Tuple[Dict[str, VT], Callable[[Mapping[str, VT]], None]], None, None]:
         with open(self.file, "r+") as f:
-            data = json.load(f)
+            data: Dict[str, VT] = json.load(f)
 
-            def dump(data: dict, **kwargs):
+            def dump(data: Mapping[str, VT], **kwargs):
                 f.seek(0)
-                json.dump(data, f)
+                json.dump(data, f, **kwargs)
                 f.truncate()
 
             yield data, dump
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         return self._load().keys()
 
-    def values(self):
+    def values(self) -> ValuesView[VT]:
         return self._load().values()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._load())
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._load().keys())
 
-    def __getitem__(self, key) -> Any:
-        key = _json_keyer(key)
-        return self._load()[key]
+    def __getitem__(self, key: KT) -> VT:
+        k = _json_keyer(key)
+        return self._load()[k]
 
-    def __setitem__(self, key, value: Any):
-        key = _json_keyer(key)
+    def __setitem__(self, key: KT, value: VT):
+        k = _json_keyer(key)
         with self._writer() as (data, dump):
-            data[key] = value
+            data[k] = value
             dump(data)
 
-    def __delitem__(self, key):
-        key = _json_keyer(key)
+    def __delitem__(self, key: KT):
+        k = _json_keyer(key)
         with self._writer() as (data, dump):
-            del data[key]
+            del data[k]
             dump(data)
 
 
@@ -79,23 +94,8 @@ async def asyncnull(*args, **kwargs):
     pass
 
 
-class PartialContext(commands.Context):
-    _attrs = {}
-
-    def __getattribute__(self, k):
-        if k[0] == "_":
-            return super().__getattribute__(k)
-        elif k in self._attrs:
-            return self._attrs[k]
-        else:
-            return super().__getattribute__(k)
-
-    def __init__(self, **attrs):
-        self._attrs = attrs
-
-
 class ExpandingCodeblock:
-    ctx: commands.Context
+    ctx: Optional[commands.Context]
     prefix: str
     suffix: str
     maxlen: int
@@ -120,7 +120,7 @@ class ExpandingCodeblock:
             else:
                 self._contents[-1] += line
 
-    def content_to_message_args(self, content: str, edit: bool = False) -> dict:
+    def content_to_message_args(self, content: str, edit: bool = False) -> Mapping[str, Any]:
         return {"content": self.prefix + content.strip("\n") + self.suffix}
         # Could instead return {"embed": discord.Embed(...)}
 
@@ -158,7 +158,3 @@ async def react_output(bot: discord.Client, message: discord.Message, success: b
             emoji = "\u274C"  # \N{Cross mark}
     # schedule in the background
     return asyncio.create_task(_react_output(bot, message, emoji, wait))
-
-
-class Problem(commands.CommandError):
-    pass

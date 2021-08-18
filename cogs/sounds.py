@@ -1,65 +1,184 @@
+from __future__ import annotations
+
 import discord
 from discord.ext import commands
+from discord_slash import cog_ext
+from discord_slash.context import SlashContext
+from discord_slash.model import CommandObject
 import json
 from pathlib import Path
 import random
-import traceback
-from typing import Sequence, Union
-from .utils import react_output, Problem
+import re
+import string
+from typing import Any, Callable, Coroutine, List, Mapping, Optional, Sequence, Union
+from .utils import Problem, react_output
+from .utils.typing import SOUNDS_JSON, SoundDef
 
 
 SOUNDDIR = Path("./sounds")
 
+# Characters valid within a slash command name
+SLASHCHARS = string.ascii_letters + string.digits + "-_"
+SLASHRE = re.compile(r"^[\w-]{1,32}$", re.IGNORECASE | re.ASCII)
 
-class BaseVoiceCog(commands.Cog):
+
+class AudioPlayer:
+    name: str
+    description: Optional[str]
+    aliases: Sequence[str]
+    slash: bool
+    slash_name: Optional[str]
+    slash_group: Optional[str]
+    cmd_kwargs: Mapping[str, Any]
+
+    # Original data
+    sound_data: SoundDef
+    # Random sounds and weights
+    sound_arrays: Sequence[Sequence[Path]]
+    sound_weights: Sequence[int]
+
+    autodelete: bool = True  # should we automatically delete the trigger message
+
+    def __init__(self, name: str, data: SoundDef):
+        self.name = name
+        self.sound_data = data.copy()
+
+        self.description = data.get("description", None)
+        self.aliases = data.get("aliases", [])
+        self.slash = data.get("slash", False)
+        self.slash_name = data.get("slash_name", None)
+        self.slash_group = data.get("slash_group", None)
+        self.cmd_kwargs = data.get("commandkwargs", {})
+
+        files = data.get("files", [])
+
+        arrays: List[List[Path]] = []
+        weights: List[int] = []
+        for fd in files:
+            filenames: List[Path] = []
+            if "glob" in fd:
+                filenames.extend(SOUNDDIR.glob(fd["glob"]))
+            if "filenames" in fd:
+                filenames.extend(map(SOUNDDIR.joinpath, fd["filenames"]))
+            if "filename" in fd:
+                filenames.append(SOUNDDIR / fd["filename"])
+
+            if len(filenames) >= 1:
+                arrays.append(filenames)
+                weights.append(fd.get("weight", 1))
+
+        self.sound_arrays = arrays
+        self.sound_weights = weights
+
+    def copy(self) -> AudioPlayer:
+        return type(self)(self.name, self.sound_data)
+
+    def get_filename(self) -> Path:
+        ls = random.choices(self.sound_arrays, self.sound_weights)[0]
+        if len(ls):
+            return random.choice(ls)
+        else:
+            raise Exception("Missing filenames")
+
+    async def play_with(self, voice_client: discord.VoiceClient) -> Path:
+        fname = self.get_filename()
+        source = await discord.FFmpegOpusAudio.from_probe(fname)
+        voice_client.play(source)
+
+        s = f"Played {self.name} ({fname})"
+        try:
+            s += f" in {voice_client.channel.name}"
+            s += f" ({voice_client.guild.name})"
+        except AttributeError:
+            pass
+        print(s)
+
+        return fname
+
+    def to_command_callback(self) -> Callable[[BaseSoundsCog, commands.Context], Coroutine]:
+        async def callback(cself: BaseSoundsCog, ctx: commands.Context):
+            if getattr(self, "autodelete", False):
+                try:
+                    await ctx.message.delete()
+                except discord.HTTPException:  # includes Forbidden, NotFound
+                    pass  # fail silently
+
+            await cself.join_voice(ctx)  # may raise Problem
+            await self.play_with(ctx.voice_client)
+
+        callback.__name__ = self.name
+        return callback
+
+    def to_command(
+        self,
+        command_decorator: Callable[..., Callable[[Callable[..., Coroutine]], commands.Command]],
+    ) -> commands.Command:
+        callback = self.to_command_callback()
+        cmd = command_decorator(
+            name=self.name,
+            aliases=self.aliases,
+            description=self.description or "",
+            **self.cmd_kwargs,
+        )(callback)
+        commands.guild_only()(cmd)
+        return cmd
+
+    def get_slash_name(self) -> str:
+        if self.slash_name is not None:
+            return self.slash_name
+
+        if SLASHRE.match(self.name):
+            return self.name
+
+        for name in self.aliases:
+            if SLASHRE.match(name):
+                return name
+
+        return "".join(c for c in self.name if c in SLASHCHARS)[:32]
+
+    def to_slash_callback(self) -> Callable[[BaseSoundsCog, SlashContext], Coroutine]:
+        name = self.get_slash_name()
+
+        async def callback(cself: BaseSoundsCog, ctx: SlashContext):
+            await ctx.defer(hidden=True)  # prevent `failed`
+
+            # ctx.voice_client = ctx.guild.voice_client  # TODO: fix
+            await cself.join_voice(ctx)  # may raise Problem
+            await self.play_with(ctx.guild.voice_client)
+            await ctx.send(name, hidden=True)
+
+        # callback.__name__ = name
+        return callback
+
+    def to_slash(
+        self,
+        command_decorator: Callable[..., Callable[[Callable[..., Coroutine]], CommandObject]],
+        subcommand_decorator: Callable[..., Callable[[Callable[..., Coroutine]], CommandObject]],
+    ) -> CommandObject:
+        name = self.get_slash_name()
+        callback = self.to_slash_callback()
+
+        if self.slash_group is None:
+            return command_decorator(name=name, description=self.description, options=[])(callback)
+        else:
+            return subcommand_decorator(base=self.slash_group, name=name, description=self.description, options=[])(callback)
+
+
+class BaseSoundsCog(commands.Cog):
     bot: commands.Bot
-    soundcommands: dict = None
+    sounds: Optional[dict[str, AudioPlayer]] = None
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     def __repr__(self):
         s = "<" + type(self).__name__
-        if self.soundcommands is not None:
-            s += " soundcommands=array[{}]".format(len(self.soundcommands))
+        if self.sounds is not None:
+            s += " sounds=array[{}]".format(len(self.sounds))
         return s + ">"
 
-    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, Problem):
-            await ctx.send("\n".join(map(str, error.args)), delete_after=4)
-            return
-        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
-            await ctx.send("You need to be in a guild to do that!", delete_after=4)
-            return
-        traceback.print_exc()
-
-    @commands.guild_only()
-    @commands.command(name="join")
-    async def join_voice(self, ctx: commands.Context) -> bool:
-        # if ctx.guild is None:
-        #     raise Problem("Sorry, I can't do that outside of servers.")
-
-        voicestate = ctx.author.voice
-
-        if voicestate is None:
-            raise Problem("But you aren't in a voice chat!")
-
-        if ctx.voice_client is not None and ctx.voice_client.channel == voicestate.channel:  # already there
-            if ctx.voice_client.is_playing():
-                ctx.voice_client.stop()
-            return True
-
-        try:
-            await voicestate.channel.connect()
-        except discord.ClientException:  # already in a voice chat
-            if ctx.voice_client:  # ignore `ctx.voice_client.is_playing()`
-                await ctx.voice_client.move_to(voicestate.channel)
-            else:
-                raise Problem("Sorry, I'm busy right now.")
-        return True
-
-    async def join_voice_channel(self, channel: discord.VoiceChannel) -> bool:
-        voice_client = channel.guild.voice_client
+    async def join_voice_channel(self, channel: discord.VoiceChannel) -> True:
+        voice_client: Optional[discord.VoiceClient] = channel.guild.voice_client
 
         if voice_client is not None and voice_client.channel == channel:  # already there
             if voice_client.is_playing():
@@ -72,22 +191,64 @@ class BaseVoiceCog(commands.Cog):
             if voice_client:  # ignore `voice_client.is_playing()`
                 await voice_client.move_to(channel)
             else:
-                return False
+                raise Problem("Sorry, I'm busy right now.")
         return True
+
+    async def join_voice(self, ctx: Union[commands.Context, SlashContext]):
+        if ctx.guild is None:
+            raise commands.NoPrivateMessage
+
+        voicestate: Optional[discord.VoiceState] = ctx.author.voice
+
+        if voicestate is None:
+            raise Problem("But you aren't in a voice chat!")
+
+        return await self.join_voice_channel(voicestate.channel)
+
+    async def leave_voice_channel(self, guild: discord.Guild) -> bool:
+        voice_client: Optional[discord.VoiceClient] = guild.voice_client
+        if voice_client is not None:
+            await voice_client.disconnect()
+            return True
+        return False
+
+    async def leave_voice(self, ctx: Union[commands.Context, SlashContext]):
+        if ctx.guild is None:
+            raise commands.NoPrivateMessage
+
+        return await self.leave_voice_channel(ctx.guild)
+
+    @commands.guild_only()
+    @commands.command(name="join")
+    async def cmd_join(self, ctx: commands.Context):
+        await self.join_voice(ctx)
 
     @commands.guild_only()
     @commands.command(name="leave", aliases=["stop"])
-    async def leave_voice(self, ctx: commands.Context):
-        if ctx.voice_client is not None:
-            await ctx.voice_client.disconnect()
+    async def cmd_leave(self, ctx: commands.Context):
+        await self.leave_voice(ctx)
+
+    @commands.guild_only()
+    @cog_ext.cog_slash(name="join")
+    async def slash_join(self, ctx: SlashContext):
+        await self.join_voice(ctx)
+        await ctx.send("Hello!", hidden=True)
+
+    @commands.guild_only()
+    @cog_ext.cog_slash(name="leave")
+    async def slash_leave(self, ctx: SlashContext):
+        await self.leave_voice(ctx)
+        await ctx.send("Goodbye!", hidden=True)
 
     @commands.is_owner()
     @commands.command(name="trigger")
-    async def trigger(self, ctx: commands.Context, cmd: str, where: Union[discord.VoiceChannel, discord.Guild, None] = None):
+    async def cmd_trigger(self, ctx: commands.Context, cmd: str, where: Union[discord.VoiceChannel, discord.Guild, None] = None):
+        raise NotImplementedError
+
         if cmd not in self.soundcommands:
             raise Problem(f"Unrecognised command: {cmd}")
 
-        cmd = self.soundcommands[cmd]
+        cmdo = self.soundcommands[cmd]
 
         if isinstance(where, discord.Guild):
             voice_client = where.voice_client
@@ -102,97 +263,33 @@ class BaseVoiceCog(commands.Cog):
         else:
             raise Problem("Supply a guild or voice channel!")
 
-        await cmd.play_with(voice_client)
+        await cmdo.play_with(voice_client)
         await react_output(self.bot, ctx.message, success=True)
 
 
-async def soundplayer_callback(self: BaseVoiceCog, ctx: commands.Context):
-    if getattr(ctx.command, "sound_autodelete", False):
-        try:
-            await ctx.message.delete()
-        except discord.HTTPException:  # includes Forbidden, NotFound
-            pass  # fail silently
-
-    if await self.join_voice(ctx):
-        await ctx.command.play_with(ctx.voice_client)
-
-
-class SoundPlayerCommand(commands.Command):
-    sound_name: str
-    sound_data: dict
-    sound_arrays: Sequence[Path]
-    sound_weights: Sequence[int]
-    sound_autodelete: bool = True  # should automatically delete the message on trigger
-
-    def __init__(self, name: str, data: dict):
-        self.sound_name = name
-        self.sound_data = data
-
-        files = data["files"]
-
-        arrays, weights = [], []
-        for fd in files:
-            filenames = []
-            if "glob" in fd.keys():
-                filenames.extend(SOUNDDIR.glob(fd["glob"]))
-            if "filenames" in fd.keys():
-                filenames.extend(map(SOUNDDIR.joinpath, fd["filenames"]))
-            if "filename" in fd.keys():
-                filenames.append(SOUNDDIR / fd["filename"])
-
-            if len(filenames) >= 1:
-                arrays.append(filenames)
-                weights.append(fd.get("weight", 1))
-
-        self.sound_arrays = arrays
-        self.sound_weights = weights
-
-        commands.Command.__init__(self, soundplayer_callback, name=name,
-                                  aliases=data.get("aliases", []),
-                                  **data.get("commandkwargs", {}))
-
-        commands.guild_only()(self)  # make the command guild-only by adding the check
-
-    def copy(self):
-        return type(self)(self.sound_name, self.sound_data)
-
-    def get_filename(self):
-        ls = random.choices(self.sound_arrays, self.sound_weights)[0]
-        if len(ls):
-            return random.choice(ls)
-        else:
-            raise Exception("Missing filenames")
-
-    async def play_with(self, voice_client: discord.VoiceClient):
-        fname = self.get_filename()
-        source = await discord.FFmpegOpusAudio.from_probe(fname)
-        voice_client.play(source)
-
-        print(f"Played {self.sound_name} ({fname}) in "
-              f"{voice_client.channel.name} ({voice_client.guild.name})")
-
-        return fname
-
-
-def VoiceCog(bot: commands.Bot) -> BaseVoiceCog:
+def SoundCog(bot: commands.Bot) -> BaseSoundsCog:
     with open(SOUNDDIR / "sounds.json") as f:
-        sounds_json = json.load(f)
+        sounds_json: SOUNDS_JSON = json.load(f)
 
-    commands = {}
+    sounds: dict[str, AudioPlayer] = {}
+    d = {}
     for name, data in sounds_json.items():
-        commands[name] = SoundPlayerCommand(name, data)
+        sounds[name] = s = AudioPlayer(name, data)
+        d["scmd_" + s.name] = s.to_command(commands.command)
+        d["sslash_" + s.get_slash_name()] = s.to_slash(cog_ext.cog_slash, cog_ext.cog_subcommand)
 
-    pdict = {"sound_" + name: cmd for name, cmd in commands.items()}
-    pdict["soundcommands"] = commands
+    d["sounds"] = sounds
 
-    VoiceCogT = type("VoiceCog", (BaseVoiceCog,), pdict)
+    SoundCogT = type("SoundCog", (BaseSoundsCog,), d)
 
-    return VoiceCogT(bot)
+    return SoundCogT(bot)
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(VoiceCog(bot))
+    bot.add_cog(SoundCog(bot))
+    # bot.loop.create_task(
+    #     bot.slash.sync_all_commands(delete_from_unused_guilds=True))
 
 
 def teardown(bot: commands.Bot):
-    bot.remove_cog("VoiceCog")
+    bot.remove_cog("SoundCog")

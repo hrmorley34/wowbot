@@ -1,8 +1,9 @@
-from discord.ext import commands
-from .utils import ExpandingCodeblock
-from typing import Sequence
 import asyncio
+from discord.ext import commands
 import re
+from typing import Sequence
+
+from .utils import ExpandingCodeblock
 
 
 ANSI_RE = re.compile("\x1b\\[[^\\100-\\177]*[\\100-\\177]")

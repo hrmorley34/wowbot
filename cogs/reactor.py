@@ -1,16 +1,22 @@
+from __future__ import annotations
+
+import asyncio
+from collections.abc import Mapping
 import discord
 from discord.ext import commands
-from .utils import JsonFileDict, PartialContext, Problem, react_output
-from typing import Literal, Tuple, Union
-from collections.abc import Mapping
 import traceback
-import asyncio
+from typing import Literal, TYPE_CHECKING, Tuple, Union
+from .utils import JsonFileDict, Problem, react_output
+
+if TYPE_CHECKING:
+    from .sounds import BaseSoundsCog
+    from .utils.typing import ReactionGuild
 
 
 class ReactorCog(commands.Cog):
     bot: commands.Bot
 
-    guilds: Mapping[int, Mapping[str, int]]  # guild -> {"channel": <id>, "message": <id>}
+    guilds: JsonFileDict[int, ReactionGuild]  # guild -> {"channel": <id>, "message": <id>}
     # mapping of (False, <unicode>) or (True, <emojiid>) -> <soundname> or "join" or "leave"
     reactionmap: Mapping[Union[Tuple[Literal[False], str], Tuple[Literal[True], int]], str] = {
         (True, 801507645491249202): "wow",  # 'wow'
@@ -29,15 +35,6 @@ class ReactorCog(commands.Cog):
 
     def __repr__(self):
         return "<{}>".format(type(self).__name__)
-
-    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, Problem):
-            await ctx.send("\n".join(map(str, error.args)), delete_after=4)
-            return
-        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
-            await ctx.send("You need to be in a guild to do that!", delete_after=4)
-            return
-        traceback.print_exc()
 
     async def add_reactions(self, message: discord.Message):
         tasks = []
@@ -160,21 +157,21 @@ class ReactorCog(commands.Cog):
             ch = self.bot.get_channel(rawreaction.channel_id)
             if ch is None:
                 ch = await self.bot.fetch_channel(rawreaction.channel_id)
-            msg = await ch.fetch_message(rawreaction.message_id)
+            msg: discord.Message = await ch.fetch_message(rawreaction.message_id)
 
             try:
                 await msg.remove_reaction(rawreaction.emoji, member)
             except discord.Forbidden:
                 pass  # oh well
 
-            vcog = self.bot.get_cog("VoiceCog")
+            vcog: BaseSoundsCog = self.bot.get_cog("SoundCog")
             if sound == "join":
                 if member.voice is not None and member.voice.channel is not None:
                     await vcog.join_voice_channel(member.voice.channel)
             elif sound == "leave":
-                await vcog.leave_voice(PartialContext(voice_client=member.guild.voice_client))
+                await vcog.leave_voice_channel(member.guild)
             else:
-                soundcmd = vcog.soundcommands.get(sound)
+                soundcmd = vcog.sounds.get(sound)
                 if member.voice is not None and member.voice.channel is not None:
                     if await vcog.join_voice_channel(member.voice.channel):
                         await soundcmd.play_with(member.guild.voice_client)

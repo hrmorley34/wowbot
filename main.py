@@ -5,7 +5,7 @@ import json
 
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("&"))
-slash = SlashCommand(bot, override_type=True)
+slash = SlashCommand(bot)
 
 
 bot.load_extension("cogs")

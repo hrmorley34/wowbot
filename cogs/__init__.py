@@ -1,9 +1,15 @@
 import discord
 from discord.ext import commands
-from .utils import react_output
-from typing import Optional
+from discord_slash import cog_ext
+from discord_slash.context import SlashContext
+from discord_slash.model import SlashCommandPermissionType
+from discord_slash.utils.manage_commands import create_permission
 import platform
 import random
+from typing import Optional
+
+from .utils import react_output
+from .utils.problem import Problem
 
 
 activities = [discord.Game("wow - &wow")]
@@ -29,6 +35,26 @@ class InitCog(commands.Cog):
         self.bot.loop.create_task(
             self.bot.slash.sync_all_commands(delete_from_unused_guilds=True))
 
+    @commands.Cog.listener()
+    async def on_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, Problem):
+            await ctx.send("\n".join(map(str, error.args)), delete_after=4)
+            return
+        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
+            await ctx.send("You need to be in a guild to do that!", delete_after=4)
+            return
+        raise error
+
+    @commands.Cog.listener()
+    async def on_slash_command_error(self, ctx: SlashContext, error: commands.CommandError):
+        if isinstance(error, Problem):
+            await ctx.send("\n".join(map(str, error.args)), hidden=True)
+            return
+        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
+            await ctx.send("You need to be in a guild to do that!", hidden=True)
+            return
+        raise error
+
     async def _reload(self):
         self.bot.reload_extension("cogs")
         print("Reloaded")
@@ -44,6 +70,23 @@ class InitCog(commands.Cog):
         await self._reload()
 
         await react_output(self.bot, ctx.message)
+
+    @cog_ext.cog_slash(
+        name="reload",
+        guild_ids=[690860332322914305],
+        default_permission=False,
+        permissions={
+            690860332322914305: [
+                create_permission(367722993293590529, SlashCommandPermissionType.USER, True),
+            ],
+        },
+    )
+    async def slash_reload(self, ctx: SlashContext):
+        await ctx.defer(hidden=True)
+
+        await self._reload()
+
+        await ctx.send("Reloaded!", hidden=True)
 
     @commands.command(name="suspend", aliases=["^z", "^Z"])
     @commands.is_owner()
@@ -83,7 +126,11 @@ class InitCog(commands.Cog):
 def setup(bot: commands.Bot):
     bot.add_cog(InitCog(bot))
 
-    for ext in ["cogs.sounds", "cogs.reactor", "cogs.cmds", "cogs.slash"]:
+    for ext in [
+        "cogs.sounds",
+        "cogs.reactor",
+        "cogs.cmds",
+    ]:
         try:
             bot.load_extension(ext)
         except commands.ExtensionAlreadyLoaded:
