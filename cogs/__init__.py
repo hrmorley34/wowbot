@@ -36,7 +36,7 @@ class InitCog(commands.Cog):
             self.bot.slash.sync_all_commands(delete_from_unused_guilds=True))
 
     @commands.Cog.listener()
-    async def on_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, Problem):
             await ctx.send("\n".join(map(str, error.args)), delete_after=4)
             return
