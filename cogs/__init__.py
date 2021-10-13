@@ -130,6 +130,7 @@ def setup(bot: commands.Bot):
         "cogs.sounds",
         "cogs.reactor",
         "cogs.cmds",
+        "cogs.componentreactor",
     ]:
         try:
             bot.load_extension(ext)
