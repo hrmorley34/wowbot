@@ -146,48 +146,49 @@ class ComponentReactorCog(commands.Cog):
 
     #     await react_output(self.bot, ctx.message)
 
-    @commands.Cog.listener()
-    async def on_component(self, ctx: ComponentContext):
+    @commands.Cog.listener(name="on_component")
+    async def _on_component(self, ctx: ComponentContext):
         try:
-            if ctx.author_id == self.bot.user.id:
-                return  # ignore self
-
-            if ctx.guild is None:
-                return
-
-            guildid = ctx.guild_id
-
-            if (
-                guildid in self.guilds
-                and self.guilds[guildid].get("channel") == ctx.channel_id
-                # and self.guilds[guildid].get("message") == ctx.???
-            ):
-                sound: str = ctx.custom_id
-
-                member: discord.Member = ctx.author
-                vcog: BaseSoundsCog = self.bot.get_cog("SoundCog")
-                if sound == "join":
-                    # if member.voice is not None and member.voice.channel is not None:
-                    await vcog.join_voice(ctx)
-                    await ctx.defer(ignore=True)
-                    return
-                elif sound == "leave":
-                    await vcog.leave_voice_channel(member.guild)
-                    await ctx.defer(ignore=True)
-                    return
-                else:
-                    soundcmd = vcog.sounds.get(sound)
-                    # if member.voice is not None and member.voice.channel is not None:
-                    if await vcog.join_voice(ctx):
-                        await soundcmd.play_with(member.guild.voice_client)
-                        await ctx.defer(ignore=True)
-                        return
+            await self.on_component(ctx)
         except commands.CommandError as error:
-            await self._component_callback_error(ctx, error)
+            await self.on_component_callback_error(ctx, error)
         except Exception as error:
-            await self._component_callback_error(ctx, commands.CommandError(error))
+            await self.on_component_callback_error(ctx, commands.CommandError(error))
 
-    async def _component_callback_error(self, ctx: ComponentContext, error: commands.CommandError):
+    async def on_component(self, ctx: ComponentContext):
+        if ctx.guild is None:
+            return
+
+        guildid = ctx.guild_id
+
+        if (
+            guildid in self.guilds
+            and self.guilds[guildid].get("channel") == ctx.channel_id
+            # and self.guilds[guildid].get("message") == ctx.???
+        ):
+            sound: str = ctx.custom_id
+
+            member: discord.Member = ctx.author
+            vcog: BaseSoundsCog = self.bot.get_cog("SoundCog")
+            if sound == "join":
+                # if member.voice is not None and member.voice.channel is not None:
+                await vcog.join_voice(ctx)
+                await ctx.defer(ignore=True)
+                return
+            elif sound == "leave":
+                await vcog.leave_voice_channel(member.guild)
+                await ctx.defer(ignore=True)
+                return
+            else:
+                soundcmd = vcog.sounds.get(sound)
+                # if member.voice is not None and member.voice.channel is not None:
+                if await vcog.join_voice(ctx):
+                    await soundcmd.play_with(member.guild.voice_client)
+                    await ctx.defer(ignore=True)
+                    return
+
+    @commands.Cog.listener()
+    async def on_component_callback_error(self, ctx: ComponentContext, error: commands.CommandError):
         if isinstance(error, Problem):
             await ctx.send(error.to_str(), hidden=True)
             return
