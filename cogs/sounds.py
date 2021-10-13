@@ -3,7 +3,7 @@ from __future__ import annotations
 import discord
 from discord.ext import commands
 from discord_slash import cog_ext
-from discord_slash.context import SlashContext
+from discord_slash.context import ComponentContext, SlashContext
 from discord_slash.model import CommandObject
 import json
 from pathlib import Path
@@ -194,7 +194,7 @@ class BaseSoundsCog(commands.Cog):
                 raise Problem("Sorry, I'm busy right now.")
         return True
 
-    async def join_voice(self, ctx: Union[commands.Context, SlashContext]):
+    async def join_voice(self, ctx: Union[commands.Context, SlashContext, ComponentContext]):
         if ctx.guild is None:
             raise commands.NoPrivateMessage
 

@@ -1,6 +1,7 @@
 "Component Reactor: click on components to play sounds"
 
 from __future__ import annotations
+import functools
 
 import discord
 from discord.channel import TextChannel
@@ -12,7 +13,7 @@ from discord_slash.context import ComponentContext, SlashContext
 from discord_slash.model import ButtonStyle
 from discord_slash.utils.manage_components import create_button, create_actionrow
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 from .utils import JsonFileDict, Problem
 
 if TYPE_CHECKING:
@@ -147,41 +148,53 @@ class ComponentReactorCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_component(self, ctx: ComponentContext):
-        print(ctx.custom_id)
-        if ctx.author_id == self.bot.user.id:
-            return  # ignore self, for when populating message
+        try:
+            if ctx.author_id == self.bot.user.id:
+                return  # ignore self
 
-        guildid = ctx.guild_id
+            if ctx.guild is None:
+                return
 
-        if (
-            guildid in self.guilds
-            and self.guilds[guildid].get("channel") == ctx.channel_id
-            # and self.guilds[guildid].get("message") == ctx.???
-        ):
-            sound: str = ctx.custom_id
+            guildid = ctx.guild_id
 
-            member: discord.Member = ctx.author
-            vcog: BaseSoundsCog = self.bot.get_cog("SoundCog")
-            if sound == "join":
-                if member.voice is not None and member.voice.channel is not None:
-                    await vcog.join_voice_channel(member.voice.channel)
+            if (
+                guildid in self.guilds
+                and self.guilds[guildid].get("channel") == ctx.channel_id
+                # and self.guilds[guildid].get("message") == ctx.???
+            ):
+                sound: str = ctx.custom_id
+
+                member: discord.Member = ctx.author
+                vcog: BaseSoundsCog = self.bot.get_cog("SoundCog")
+                if sound == "join":
+                    # if member.voice is not None and member.voice.channel is not None:
+                    await vcog.join_voice(ctx)
                     await ctx.defer(ignore=True)
                     return
-                await ctx.send("!!", hidden=True)
-                return
-            elif sound == "leave":
-                await vcog.leave_voice_channel(member.guild)
-                await ctx.defer(ignore=True)
-                return
-            else:
-                soundcmd = vcog.sounds.get(sound)
-                if member.voice is not None and member.voice.channel is not None:
-                    if await vcog.join_voice_channel(member.voice.channel):
+                elif sound == "leave":
+                    await vcog.leave_voice_channel(member.guild)
+                    await ctx.defer(ignore=True)
+                    return
+                else:
+                    soundcmd = vcog.sounds.get(sound)
+                    # if member.voice is not None and member.voice.channel is not None:
+                    if await vcog.join_voice(ctx):
                         await soundcmd.play_with(member.guild.voice_client)
                         await ctx.defer(ignore=True)
                         return
-                await ctx.send("!!", hidden=True)
-                return
+        except commands.CommandError as error:
+            await self._component_callback_error(ctx, error)
+        except Exception as error:
+            await self._component_callback_error(ctx, commands.CommandError(error))
+
+    async def _component_callback_error(self, ctx: ComponentContext, error: commands.CommandError):
+        if isinstance(error, Problem):
+            await ctx.send(error.to_str(), hidden=True)
+            return
+        elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
+            await ctx.send("You need to be in a guild to do that!", hidden=True)
+            return
+        raise error
 
 
 def setup(bot: commands.Bot):
