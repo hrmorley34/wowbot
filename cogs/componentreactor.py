@@ -70,11 +70,6 @@ class ComponentReactorCog(commands.Cog):
             ch = await self.bot.fetch_channel(rg["channel"])
         return await ch.fetch_message(rg["message"])
 
-    # @cog_ext.cog_subcommand(base=BASE_COMMAND, name="help")
-    # @commands.group(name="creaction", aliases=["creact"])
-    # async def help(self, ctx: SlashContext):
-    #     pass
-
     @cog_ext.cog_subcommand(base=BASE_COMMAND, name="here")
     async def here(self, ctx: SlashContext):
         " Create a reactable message in the current text channel "
