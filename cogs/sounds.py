@@ -10,7 +10,7 @@ from pathlib import Path
 import random
 import re
 import string
-from typing import Any, Callable, Coroutine, List, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Coroutine, List, Literal, Mapping, Optional, Sequence, Union
 from .utils import Problem, react_output
 from .utils.typing import SOUNDS_JSON, SoundDef
 
@@ -177,7 +177,7 @@ class BaseSoundsCog(commands.Cog):
             s += " sounds=array[{}]".format(len(self.sounds))
         return s + ">"
 
-    async def join_voice_channel(self, channel: discord.VoiceChannel) -> True:
+    async def join_voice_channel(self, channel: discord.VoiceChannel) -> Literal[True]:
         voice_client: Optional[discord.VoiceClient] = channel.guild.voice_client
 
         if voice_client is not None and voice_client.channel == channel:  # already there

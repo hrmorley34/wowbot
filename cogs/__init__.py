@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord_slash import cog_ext
-from discord_slash.context import ComponentContext, SlashContext
+from discord_slash.context import SlashContext
 from discord_slash.model import SlashCommandPermissionType
 from discord_slash.utils.manage_commands import create_permission
 import platform

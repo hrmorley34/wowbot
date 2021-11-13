@@ -32,6 +32,7 @@ def decode_output(in_: bytes, encoding=None) -> str:
 
 async def _run_command(args: Sequence[str], output: ExpandingCodeblock):
     proc = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+    assert proc.stdout is not None
     rline = await proc.stdout.readline()
     while rline:
         output.append(decode_output(rline))

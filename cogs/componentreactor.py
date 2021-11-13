@@ -169,7 +169,7 @@ class ComponentReactorCog(commands.Cog):
             else:
                 soundcmd = vcog.sounds.get(sound)
                 # if member.voice is not None and member.voice.channel is not None:
-                if await vcog.join_voice(ctx):
+                if soundcmd is not None and await vcog.join_voice(ctx):
                     await soundcmd.play_with(member.guild.voice_client)
                     await ctx.defer(ignore=True)
                     return
