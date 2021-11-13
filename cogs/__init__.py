@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord_slash import cog_ext
-from discord_slash.context import SlashContext
+from discord_slash.context import ComponentContext, SlashContext
 from discord_slash.model import SlashCommandPermissionType
 from discord_slash.utils.manage_commands import create_permission
 import platform
@@ -38,7 +38,7 @@ class InitCog(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, Problem):
-            await ctx.send("\n".join(map(str, error.args)), delete_after=4)
+            await ctx.send(error.to_str(), delete_after=4)
             return
         elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
             await ctx.send("You need to be in a guild to do that!", delete_after=4)
@@ -48,7 +48,7 @@ class InitCog(commands.Cog):
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx: SlashContext, error: commands.CommandError):
         if isinstance(error, Problem):
-            await ctx.send("\n".join(map(str, error.args)), hidden=True)
+            await ctx.send(error.to_str(), hidden=True)
             return
         elif isinstance(error, commands.NoPrivateMessage):  # guild_only check failed
             await ctx.send("You need to be in a guild to do that!", hidden=True)
@@ -130,6 +130,7 @@ def setup(bot: commands.Bot):
         "cogs.sounds",
         "cogs.reactor",
         "cogs.cmds",
+        "cogs.componentreactor",
     ]:
         try:
             bot.load_extension(ext)
