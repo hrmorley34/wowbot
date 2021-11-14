@@ -4,15 +4,18 @@ import discord
 from discord.ext import commands
 from discord_slash import cog_ext
 from discord_slash.context import ComponentContext, SlashContext
-from discord_slash.model import CommandObject
+from discord_slash.model import CommandObject, SlashCommandOptionType
+from discord_slash.utils.manage_commands import create_choice, create_option
 import json
 from pathlib import Path
-import random
 import re
 import string
-from typing import Any, Callable, Coroutine, List, Literal, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Coroutine, Literal, Optional, Type, Union
+
+from sounds.lib.command import Command as _BaseCommand, BaseSlashCommand as _BaseSlashCommand, SlashCommand as _SlashCommand, SlashCommandType, SlashOptionCommand as _SlashOptionCommand
+from sounds.lib.sound import Sound as _BaseSound
+from sounds.lib.typing import COMMANDS_JSON, COMMANDS_SLASH_JSON, SOUNDS_JSON, CommandDef, CommandName, SlashCommandCommon, SlashGroup, SlashName, SlashOption, SoundDef, SoundName
 from .utils import Problem, react_output
-from .utils.typing import SOUNDS_JSON, SoundDef
 
 
 SOUNDDIR = Path("./sounds")
@@ -22,64 +25,7 @@ SLASHCHARS = string.ascii_letters + string.digits + "-_"
 SLASHRE = re.compile(r"^[\w-]{1,32}$", re.IGNORECASE | re.ASCII)
 
 
-class AudioPlayer:
-    name: str
-    description: Optional[str]
-    aliases: Sequence[str]
-    slash: bool
-    slash_name: Optional[str]
-    slash_group: Optional[str]
-    cmd_kwargs: Mapping[str, Any]
-
-    # Original data
-    sound_data: SoundDef
-    # Random sounds and weights
-    sound_arrays: Sequence[Sequence[Path]]
-    sound_weights: Sequence[int]
-
-    autodelete: bool = True  # should we automatically delete the trigger message
-
-    def __init__(self, name: str, data: SoundDef):
-        self.name = name
-        self.sound_data = data.copy()
-
-        self.description = data.get("description", None)
-        self.aliases = data.get("aliases", [])
-        self.slash = data.get("slash", False)
-        self.slash_name = data.get("slash_name", None)
-        self.slash_group = data.get("slash_group", None)
-        self.cmd_kwargs = data.get("commandkwargs", {})
-
-        files = data.get("files", [])
-
-        arrays: List[List[Path]] = []
-        weights: List[int] = []
-        for fd in files:
-            filenames: List[Path] = []
-            if "glob" in fd:
-                filenames.extend(SOUNDDIR.glob(fd["glob"]))
-            if "filenames" in fd:
-                filenames.extend(map(SOUNDDIR.joinpath, fd["filenames"]))
-            if "filename" in fd:
-                filenames.append(SOUNDDIR / fd["filename"])
-
-            if len(filenames) >= 1:
-                arrays.append(filenames)
-                weights.append(fd.get("weight", 1))
-
-        self.sound_arrays = arrays
-        self.sound_weights = weights
-
-    def copy(self) -> AudioPlayer:
-        return type(self)(self.name, self.sound_data)
-
-    def get_filename(self) -> Path:
-        ls = random.choices(self.sound_arrays, self.sound_weights)[0]
-        if len(ls):
-            return random.choice(ls)
-        else:
-            raise Exception("Missing filenames")
-
+class Sound(_BaseSound):
     async def play_with(self, voice_client: discord.VoiceClient) -> Path:
         fname = self.get_filename()
         source = await discord.FFmpegOpusAudio.from_probe(fname)
@@ -95,6 +41,21 @@ class AudioPlayer:
 
         return fname
 
+
+class Command(_BaseCommand):
+    sound: Sound
+
+    autodelete: bool = True  # should we automatically delete the trigger message
+
+    def __init__(self, name: CommandName, data: CommandDef, sounds: dict[SoundName, Sound]):
+        super().__init__(name, data, sounds)
+
+    def get_filename(self) -> Path:
+        return self.sound.get_filename()
+
+    async def play_with(self, voice_client: discord.VoiceClient) -> Path:
+        return await self.sound.play_with(voice_client)
+
     def to_command_callback(self) -> Callable[[BaseSoundsCog, commands.Context], Coroutine]:
         async def callback(cself: BaseSoundsCog, ctx: commands.Context):
             if getattr(self, "autodelete", False):
@@ -109,64 +70,102 @@ class AudioPlayer:
         callback.__name__ = self.name
         return callback
 
-    def to_command(
-        self,
-        command_decorator: Callable[..., Callable[[Callable[..., Coroutine]], commands.Command]],
-    ) -> commands.Command:
+    def to_command(self, commandtype: Type[commands.Command] = commands.Command) -> commands.Command:
         callback = self.to_command_callback()
-        cmd = command_decorator(
+        cmd = commandtype(
+            callback,
             name=self.name,
-            aliases=self.aliases,
+            aliases=tuple(self.aliases),
             description=self.description or "",
-            **self.cmd_kwargs,
-        )(callback)
+            **self.commandkwargs,
+        )
         commands.guild_only()(cmd)
         return cmd
 
-    def get_slash_name(self) -> str:
-        if self.slash_name is not None:
-            return self.slash_name
 
-        if SLASHRE.match(self.name):
-            return self.name
+class BaseSlashCommand(_BaseSlashCommand):
+    _slashcommandtypes = {}
 
-        for name in self.aliases:
-            if SLASHRE.match(name):
-                return name
+    def __init__(self, group: Optional[SlashGroup], name: SlashName, data: SlashCommandCommon, sounds: dict[SoundName, Sound]):
+        super().__init__(group, name, data, sounds)
 
-        return "".join(c for c in self.name if c in SLASHCHARS)[:32]
+    def to_slash_callback(self) -> Callable[..., Coroutine]:
+        raise NotImplementedError
 
-    def to_slash_callback(self) -> Callable[[BaseSoundsCog, SlashContext], Coroutine]:
-        name = self.get_slash_name()
-
-        async def callback(cself: BaseSoundsCog, ctx: SlashContext):
-            await ctx.defer(hidden=True)  # prevent `failed`
-
-            # ctx.voice_client = ctx.guild.voice_client  # TODO: fix
-            await cself.join_voice(ctx)  # may raise Problem
-            await self.play_with(ctx.guild.voice_client)
-            await ctx.send(name, hidden=True)
-
-        # callback.__name__ = name
-        return callback
+    def get_slash_options(self) -> list[dict[str, Any]]:
+        return []
 
     def to_slash(
         self,
         command_decorator: Callable[..., Callable[[Callable[..., Coroutine]], CommandObject]],
         subcommand_decorator: Callable[..., Callable[[Callable[..., Coroutine]], CommandObject]],
     ) -> CommandObject:
-        name = self.get_slash_name()
         callback = self.to_slash_callback()
 
-        if self.slash_group is None:
-            return command_decorator(name=name, description=self.description, options=[])(callback)
+        if self.group is None:
+            dec = command_decorator(name=self.name, description=self.description, options=self.get_slash_options())
         else:
-            return subcommand_decorator(base=self.slash_group, name=name, description=self.description, options=[])(callback)
+            dec = subcommand_decorator(base=self.group, name=self.name, description=self.description, options=self.get_slash_options())
+        return dec(callback)
+
+
+class SlashCommand(BaseSlashCommand, _SlashCommand, slashtype=SlashCommandType.normal):
+    sound: Sound
+
+    def get_filename(self) -> Path:
+        return self.sound.get_filename()
+
+    async def play_with(self, voice_client: discord.VoiceClient) -> Path:
+        return await self.sound.play_with(voice_client)
+
+    def to_slash_callback(self) -> Callable[[BaseSoundsCog, SlashContext], Coroutine]:
+        async def callback(cself: BaseSoundsCog, ctx: SlashContext):
+            await ctx.defer(hidden=True)  # prevent `failed`
+
+            # ctx.voice_client = ctx.guild.voice_client  # TODO: fix
+            await cself.join_voice(ctx)  # may raise Problem
+            await self.play_with(ctx.guild.voice_client)
+            await ctx.send(self.name, hidden=True)
+
+        callback.__name__ = self.name
+        return callback
+
+
+class SlashOptionCommand(BaseSlashCommand, _SlashOptionCommand, slashtype=SlashCommandType.options):
+    options: dict[SlashOption, Sound]
+
+    def get_slash_options(self) -> list[dict[str, Any]]:
+        return [
+            create_option(
+                name="sound",
+                description="Which version of the sound?",
+                option_type=SlashCommandOptionType.STRING,
+                required=False,
+                choices=[
+                    create_choice(name, name)
+                    for name in self.options.keys()
+                ]
+            ),
+        ]
+
+    def to_slash_callback(self) -> Callable[[BaseSoundsCog, SlashContext, SlashOption], Coroutine]:
+        async def callback(cself: BaseSoundsCog, ctx: SlashContext, sound: SlashOption | None = None):
+            await ctx.defer(hidden=True)  # prevent `failed`
+
+            soundobj = self.options[sound or self.default]
+
+            # ctx.voice_client = ctx.guild.voice_client  # TODO: fix
+            await cself.join_voice(ctx)  # may raise Problem
+            await soundobj.play_with(ctx.guild.voice_client)
+            await ctx.send(self.name, hidden=True)
+
+        callback.__name__ = self.name
+        return callback
 
 
 class BaseSoundsCog(commands.Cog):
     bot: commands.Bot
-    sounds: Optional[dict[str, AudioPlayer]] = None
+    sounds: Optional[dict[SoundName, Sound]] = None
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -268,17 +267,35 @@ class BaseSoundsCog(commands.Cog):
 
 
 def SoundCog(bot: commands.Bot) -> BaseSoundsCog:
+    d: dict[str, Any] = {}
+
     with open(SOUNDDIR / "sounds.json") as f:
         sounds_json: SOUNDS_JSON = json.load(f)
 
-    sounds: dict[str, AudioPlayer] = {}
-    d = {}
+    sounds: dict[SoundName, Sound] = {}
     for name, data in sounds_json.items():
-        sounds[name] = s = AudioPlayer(name, data)
-        d["scmd_" + s.name] = s.to_command(commands.command)
-        d["sslash_" + s.get_slash_name()] = s.to_slash(cog_ext.cog_slash, cog_ext.cog_subcommand)
+        sounds[name] = Sound(SOUNDDIR, name, data)
 
     d["sounds"] = sounds
+
+    with open(SOUNDDIR / "commands.json") as f:
+        commands_json: COMMANDS_JSON = json.load(f)
+
+    for name, data in commands_json.items():
+        cmd = Command(name, data, sounds)
+        d["scmd_" + cmd.name] = cmd.to_command(commands.Command)
+
+    with open(SOUNDDIR / "commands_slash.json") as f:
+        commands_slash_json: COMMANDS_SLASH_JSON = json.load(f)
+
+    for group, namedata in commands_slash_json.items():
+        if group is None:
+            groupstr = ""
+        else:
+            groupstr = f"group_{group}_"
+        for name, data in namedata.items():
+            slcmd = BaseSlashCommand(group, name, data, sounds)
+            d[f"sslash_{groupstr}{slcmd.name}"] = slcmd.to_slash(cog_ext.cog_slash, cog_ext.cog_subcommand)
 
     SoundCogT = type("SoundCog", (BaseSoundsCog,), d)
 
