@@ -1,0 +1,2 @@
+py-cord[voice] >=1.7, <2.0
+discord-py-interactions >=3.0, <4.0
