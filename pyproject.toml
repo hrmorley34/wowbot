@@ -33,7 +33,7 @@ path = "src/wowbot/__about__.py"
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
-dependencies = ["pytest", "pytest-cov"]
+dependencies = ["pytest", "pytest-cov", "pre-commit"]
 [tool.hatch.envs.default.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=wowbot --cov=tests"
 no-cov = "cov --no-cov"
@@ -48,3 +48,6 @@ omit = ["src/wowbot/__about__.py"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+
+[tool.isort]
+profile = "black"
