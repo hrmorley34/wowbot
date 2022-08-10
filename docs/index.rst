@@ -6,6 +6,7 @@ Welcome to Wowbot's documentation!
    :caption: Contents:
 
    sounds/sounds
+   sounds/commands
 
 Indices and tables
 ==================

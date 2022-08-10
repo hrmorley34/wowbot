@@ -1,0 +1,55 @@
+{
+    "version": 1,
+    "commands": [
+        {
+            "name": "mycommand",
+            "sound": "s.mysound"
+        },
+        {
+            "name": "command2",
+            "optionname": "option",
+            "options": [
+                {
+                    "name": "Option 1",
+                    "default": true,
+                    "sound": "s.mysound"
+                },
+                {
+                    "name": "Option 2",
+                    "sound": "s.example"
+                }
+            ]
+        },
+        {
+            "name": "mytoplevelcommand",
+            "subcommands": [
+                {
+                    "name": "mysubcommand",
+                    "sound": "s.mysound"
+                },
+                {
+                    "name": "myothercommand",
+                    "options": [
+                        {
+                            "name": "My Sound",
+                            "sound": "s.mysound"
+                        },
+                        {
+                            "name": "Example",
+                            "sound": "s.example"
+                        }
+                    ]
+                },
+                {
+                    "name": "mysubcommandgroup",
+                    "subcommands": [
+                        {
+                            "name": "mysubcommand",
+                            "sound": "s.mysound"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
