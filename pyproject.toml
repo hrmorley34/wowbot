@@ -33,14 +33,16 @@ path = "src/wowbot/__about__.py"
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
+
+[tool.hatch.envs.test]
 dependencies = ["pytest", "pytest-cov", "pre-commit"]
-[tool.hatch.envs.default.scripts]
+[tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
 cov-html = "pytest --cov-report=html --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
 no-cov = "cov --no-cov"
 
-[tool.hatch.envs.test]
-
+[tool.hatch.envs.testall]
+template = "test"
 [[tool.hatch.envs.testall.matrix]]
 python = ["38", "39", "310"]
 
