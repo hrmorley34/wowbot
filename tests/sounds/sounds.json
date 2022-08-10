@@ -1,0 +1,31 @@
+{
+    "version": 1,
+    "sounds": [
+        {
+            "name": "s.example",
+            "files": [
+                "example1.opus",
+                "example2.opus",
+                {
+                    "filenames": [
+                        "example3.opus",
+                        "example4.opus"
+                    ],
+                    "weight": 2
+                }
+            ]
+        },
+        {
+            "name": "s.mysound",
+            "files": [
+                {
+                    "glob": "mysound-*.opus",
+                    "weight": 9
+                },
+                {
+                    "glob": "mysound2-*.opus"
+                }
+            ]
+        }
+    ]
+}

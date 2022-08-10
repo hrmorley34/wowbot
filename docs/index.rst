@@ -5,6 +5,8 @@ Welcome to Wowbot's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   sounds/sounds
+
 Indices and tables
 ==================
 
