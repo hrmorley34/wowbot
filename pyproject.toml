@@ -35,11 +35,19 @@ path = "src/wowbot/__about__.py"
 [tool.hatch.envs.default]
 dependencies = ["pytest", "pytest-cov", "pre-commit"]
 [tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=wowbot --cov=tests"
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
+cov-html = "pytest --cov-report=html --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
 no-cov = "cov --no-cov"
 
-[[tool.hatch.envs.test.matrix]]
+[tool.hatch.envs.test]
+
+[[tool.hatch.envs.testall.matrix]]
 python = ["38", "39", "310"]
+
+[tool.hatch.envs.docs]
+dependencies = ["sphinx"]
+[tool.hatch.envs.docs.scripts]
+html = "sphinx-build -b html docs docs/_build"
 
 [tool.coverage.run]
 branch = true
