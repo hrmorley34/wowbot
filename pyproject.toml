@@ -49,7 +49,8 @@ python = ["38", "39", "310"]
 [tool.hatch.envs.docs]
 dependencies = ["sphinx"]
 [tool.hatch.envs.docs.scripts]
-html = "sphinx-build -b html docs docs/_build"
+html = "sphinx-build -M html docs docs/_build"
+clean = "sphinx-build -M clean docs docs/_build"
 
 [tool.coverage.run]
 branch = true
