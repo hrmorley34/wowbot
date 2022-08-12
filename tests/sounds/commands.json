@@ -8,7 +8,7 @@
         {
             "name": "command2",
             "optionname": "option",
-            "options": [
+            "choices": [
                 {
                     "name": "Option 1",
                     "default": true,
@@ -29,7 +29,7 @@
                 },
                 {
                     "name": "myothercommand",
-                    "options": [
+                    "choices": [
                         {
                             "name": "My Sound",
                             "sound": "s.mysound"

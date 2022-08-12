@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from wowbot.command import CommandsJson
+from wowbot.command import ChoiceCommand, CommandsJson, SoundCommand, SubcommandsCommand
 
 
 class TestCommandsJson:
@@ -42,6 +42,19 @@ class TestCommandsJson:
 
         cj = CommandsJson.parse_obj(data)
 
+        assert len(cj.commands) == 3
+        assert isinstance(cj.commands[0], SoundCommand)
+        assert isinstance(cj.commands[1], ChoiceCommand)
+        assert cj.commands[1].get_default_choice() == "Option 1"
+        assert isinstance(cj.commands[2], SubcommandsCommand)
+        assert len(cj.commands[2].subcommands) == 3
+        assert isinstance(cj.commands[2].subcommands[0], SoundCommand)
+        assert isinstance(cj.commands[2].subcommands[1], ChoiceCommand)
+        assert cj.commands[2].subcommands[1].get_default_choice() is None
+        assert isinstance(cj.commands[2].subcommands[2], SubcommandsCommand)
+        assert len(cj.commands[2].subcommands[2].subcommands) == 1
+        assert isinstance(cj.commands[2].subcommands[2].subcommands[0], SoundCommand)
+
     @staticmethod
     def get_data_from_commands(*commands: Any) -> Any:
         return {"version": 1, "commands": list(commands)}
@@ -52,13 +65,13 @@ class TestCommandsJson:
             name = str(uuid4())[:30]
         return {"name": name, "subcommands": list(commands)}
 
-    def test_option_multiple_defaults_fails(self):
+    def test_choices_multiple_defaults_fails(self):
         for count in range(2, 5):
-            options = [
-                {"name": f"thing{count}", "sound": "s.mysound", "default": True}
-                for _ in range(count)
+            choices = [
+                {"name": f"thing{i}", "sound": "s.mysound", "default": True}
+                for i in range(count)
             ]
-            cmd = {"name": "cmd", "options": options}
+            cmd = {"name": "cmd", "choices": choices}
             data = self.get_data_from_commands(cmd)
 
             with pytest.raises(ValidationError):
@@ -74,3 +87,23 @@ class TestCommandsJson:
 
         with pytest.raises(ValidationError):
             CommandsJson.parse_obj(data)
+
+    def test_no_choices_fails(self):
+        cmd: Any = {"name": "cmd", "choices": []}
+        data = self.get_data_from_commands(cmd)
+
+        with pytest.raises(ValidationError):
+            CommandsJson.parse_obj(data)
+
+    def test_too_many_choices_fails(self):
+        for count in [26, 27, 100]:
+            choices: list[Any] = [
+                {"name": f"thing{i}", "sound": "s.mysound"} for i in range(count)
+            ]
+            choices[0]["default"] = True
+
+            cmd = {"name": "cmd", "choices": choices}
+            data = self.get_data_from_commands(cmd)
+
+            with pytest.raises(ValidationError):
+                CommandsJson.parse_obj(data)

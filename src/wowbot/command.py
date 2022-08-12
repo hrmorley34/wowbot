@@ -2,10 +2,10 @@ from __future__ import annotations
 
 __all__ = [
     "SlashCommandName",
-    "OptionName",
+    "ChoiceName",
     "SoundCommand",
-    "CommandOption",
-    "OptionsCommand",
+    "CommandChoice",
+    "ChoiceCommand",
     "SubcommandsCommand",
     "AnyCommand",
     "CommandsJson",
@@ -28,7 +28,7 @@ class ValidSlashField(ConstrainedStr):
 
 
 SlashCommandName = NewType("SlashCommandName", ValidSlashField)
-OptionName = constr(min_length=1, max_length=100)
+ChoiceName = constr(min_length=1, max_length=100)
 
 
 class SoundCommand(BaseModel):
@@ -36,22 +36,24 @@ class SoundCommand(BaseModel):
     sound: SoundName
 
 
-class CommandOption(BaseModel):
-    name: OptionName
+class CommandChoice(BaseModel):
+    name: ChoiceName
     sound: SoundName
     default: bool = False
 
 
-CommandOptionList = conlist(CommandOption, min_items=1)
+# https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure
+# choice? - max 25
+CommandChoiceList = conlist(CommandChoice, min_items=1, max_items=25)
 
 
-class OptionsCommand(BaseModel):
+class ChoiceCommand(BaseModel):
     name: ValidSlashField
     optionname: ValidSlashField = ValidSlashField("sound")
-    options: CommandOptionList
+    choices: CommandChoiceList
 
-    @validator("options")
-    def check_options_defaults(cls, value: CommandOptionList) -> CommandOptionList:
+    @validator("choices")
+    def check_choices_defaults(cls, value: CommandChoiceList) -> CommandChoiceList:
         defaultscount = 0
         for op in value:
             if op.default:
@@ -59,6 +61,9 @@ class OptionsCommand(BaseModel):
         if defaultscount > 1:
             raise ValueError("Too many defaults given")
         return value
+
+    def get_default_choice(self) -> ChoiceName | None:
+        return next((op.name for op in self.choices if op.default), None)
 
 
 class SubcommandsCommand(BaseModel):
@@ -75,7 +80,7 @@ class SubcommandsCommand(BaseModel):
                 cmd.validate_depth(current + 1)
 
 
-AnyCommand = Union[SoundCommand, OptionsCommand, SubcommandsCommand]
+AnyCommand = Union[SoundCommand, ChoiceCommand, SubcommandsCommand]
 
 
 SubcommandsCommand.update_forward_refs()
@@ -90,3 +95,4 @@ class CommandsJson(BaseModel):
         for cmd in cmds:
             if isinstance(cmd, SubcommandsCommand):
                 cmd.validate_depth(0)
+        return cmds
