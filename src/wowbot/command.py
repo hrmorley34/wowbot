@@ -11,13 +11,13 @@ __all__ = [
     "CommandsJson",
 ]
 
-from typing import List, Literal, NewType, Union
+from typing import Iterable, List, Literal, NewType, Union
 
 import regex
 from pydantic import ConstrainedStr, conlist, constr, validator
 
 from .model import BaseModel
-from .sound import SoundName
+from .sound import SoundCollection, SoundName
 
 # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming
 _ValidSlashFieldType = regex.compile(r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$")
@@ -34,6 +34,10 @@ ChoiceName = constr(min_length=1, max_length=100)
 class SoundCommand(BaseModel):
     name: ValidSlashField
     sound: SoundName
+
+    def check_sounds(self, sound_names: set[SoundName]):
+        if self.sound not in sound_names:
+            raise Exception(f"Sound {self.sound} doesn't exist")
 
 
 class CommandChoice(BaseModel):
@@ -65,6 +69,11 @@ class ChoiceCommand(BaseModel):
     def get_default_choice(self) -> ChoiceName | None:
         return next((op.name for op in self.choices if op.default), None)
 
+    def check_sounds(self, sound_names: set[SoundName]):
+        for choice in self.choices:
+            if choice.sound not in sound_names:
+                raise Exception(f"Sound {choice.sound} doesn't exist")
+
 
 class SubcommandsCommand(BaseModel):
     name: ValidSlashField
@@ -78,6 +87,10 @@ class SubcommandsCommand(BaseModel):
         for cmd in self.subcommands:
             if isinstance(cmd, SubcommandsCommand):
                 cmd.validate_depth(current + 1)
+
+    def check_sounds(self, sound_names: set[SoundName]):
+        for cmd in self.subcommands:
+            cmd.check_sounds(sound_names)
 
 
 AnyCommand = Union[SoundCommand, ChoiceCommand, SubcommandsCommand]
@@ -96,3 +109,8 @@ class CommandsJson(BaseModel):
             if isinstance(cmd, SubcommandsCommand):
                 cmd.validate_depth(0)
         return cmds
+
+    def check_sounds(self, sound_names: Iterable[SoundName] | SoundCollection):
+        sound_names = set(sound_names)
+        for cmd in self.commands:
+            cmd.check_sounds(sound_names)

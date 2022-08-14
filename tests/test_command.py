@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from wowbot.command import ChoiceCommand, CommandsJson, SoundCommand, SubcommandsCommand
+from wowbot.sound import SoundName
 
 
 class TestCommandsJson:
@@ -107,3 +108,28 @@ class TestCommandsJson:
 
             with pytest.raises(ValidationError):
                 CommandsJson.parse_obj(data)
+
+    def test_missing_sound_fails(self):
+        simple_missing = {"name": "cmd", "sound": "s.missing"}
+        choice_missing = {
+            "name": "cmd",
+            "choices": [
+                dict(name="a", sound="s.mysound"),
+                dict(name="b", sound="s.missing"),
+            ],
+        }
+        for cmd in [
+            simple_missing,
+            choice_missing,
+            self.get_subcommand_from_commands(simple_missing),
+            self.get_subcommand_from_commands(choice_missing),
+            self.get_subcommand_from_commands(
+                self.get_subcommand_from_commands(simple_missing)
+            ),
+        ]:
+            data = self.get_data_from_commands(cmd)
+
+            cj = CommandsJson.parse_obj(data)
+
+            with pytest.raises(Exception):
+                cj.check_sounds({SoundName("s.mysound")})
