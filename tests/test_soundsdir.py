@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 from pathlib import Path
 
-from wowbot.soundsdir import SoundsDir
+from wowbot.model.soundsdir import SoundsDir
 
 
 class TestCommandsJson:

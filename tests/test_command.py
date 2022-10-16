@@ -9,8 +9,13 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from wowbot.command import ChoiceCommand, CommandsJson, SoundCommand, SubcommandsCommand
-from wowbot.sound import SoundName
+from wowbot.model.command import (
+    ChoiceCommand,
+    CommandsJson,
+    SoundCommand,
+    SubcommandsCommand,
+)
+from wowbot.model.sound import SoundName
 
 
 class TestCommandsJson:

@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from wowbot.sound import SoundsJson
+from wowbot.model.sound import SoundsJson
 
 
 class TestSoundsJson:
