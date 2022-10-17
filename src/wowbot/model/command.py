@@ -66,8 +66,8 @@ class ChoiceCommand(BaseModel):
             raise ValueError("Too many defaults given")
         return value
 
-    def get_default_choice(self) -> ChoiceName | None:
-        return next((op.name for op in self.choices if op.default), None)
+    def get_default_choice(self) -> CommandChoice | None:
+        return next((op for op in self.choices if op.default), None)
 
     def check_sounds(self, sound_names: set[SoundName]):
         for choice in self.choices:

@@ -51,7 +51,11 @@ class TestCommandsJson:
         assert len(cj.commands) == 3
         assert isinstance(cj.commands[0], SoundCommand)
         assert isinstance(cj.commands[1], ChoiceCommand)
-        assert cj.commands[1].get_default_choice() == "Option 1"
+        default = cj.commands[1].get_default_choice()
+        assert default is not None
+        assert default.name == "Option 1"
+        assert default.sound == "s.mysound"
+        assert default.default
         assert isinstance(cj.commands[2], SubcommandsCommand)
         assert len(cj.commands[2].subcommands) == 3
         assert isinstance(cj.commands[2].subcommands[0], SoundCommand)
