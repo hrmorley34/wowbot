@@ -27,6 +27,7 @@ class SoundsDir:
             commands_data = json.load(f)
 
         self.commands_json = CommandsJson.parse_obj(commands_data)
+        self.commands_json.check_sounds(self.sound_collection)
 
     @classmethod
     def from_folder(cls, folder: Path):
