@@ -18,13 +18,21 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
 ]
-dependencies = ["pydantic", "regex"]
+dependencies = [
+  "py-cord[speed,voice] ~= 2.2.0",
+  "pydantic ~= 1.10",
+  "python-dotenv",
+  "regex",
+]
 dynamic = ["version"]
 
 [project.urls]
 Documentation = "https://github.com/hrmorley34/wowbot#readme"
 Issues = "https://github.com/hrmorley34/wowbot/issues"
 Source = "https://github.com/hrmorley34/wowbot"
+
+[project.scripts]
+wowbot = "wowbot.discord.bot:main"
 
 [tool.hatch.version]
 path = "src/wowbot/__about__.py"
@@ -33,6 +41,8 @@ path = "src/wowbot/__about__.py"
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
+[tool.hatch.envs.default.scripts]
+bot = "wowbot"
 
 [tool.hatch.envs.test]
 dependencies = ["pytest", "pytest-cov", "pre-commit"]
