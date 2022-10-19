@@ -22,9 +22,60 @@ from typing import Dict, List, Literal, NewType, Union
 
 from pydantic import conint, conlist
 
+from .errors import BaseModelError, ContextModelError, ErrorCollection, context
 from .model import BaseModel
 
 SoundName = NewType("SoundName", str)
+
+
+class SoundNameReuseError(ContextModelError):
+    """Error for a sound name which is re-used by multiple sounds
+
+    .. autoattribute:: name
+    .. autoattribute:: context
+    """
+
+    name: SoundName
+    """The re-used name"""
+
+    def __init__(self, name: SoundName) -> None:
+        self.name = name
+        super().__init__(f"Re-use of name {name}")
+
+
+class SoundFileNotFoundError(ContextModelError):
+    """Error for a sound file which does not exist
+
+    .. autoattribute:: filename
+    .. autoattribute:: filepath
+    .. autoattribute:: context
+    """
+
+    filename: Path
+    """The name of the missing file"""
+
+    filepath: Path
+    """The non-existant path"""
+
+    def __init__(self, filename: Path, filepath: Path) -> None:
+        self.filename = filename
+        self.filepath = filepath
+        super().__init__(f"File {filepath} does not exist")
+
+
+class EmptyGlobError(ContextModelError):
+    """Error for a sound file which does not exist
+
+    .. autoattribute:: pattern
+    .. autoattribute:: context
+    """
+
+    pattern: str
+    """The glob pattern"""
+
+    def __init__(self, pattern: str) -> None:
+        self.pattern = pattern
+        super().__init__(f"Glob {pattern} has no matches")
 
 
 class SoundFileABC(BaseModel, ABC):
@@ -61,7 +112,8 @@ class Filename(SoundFileABC):
         """Resolve the path relative to root"""
         path = root / self.__root__
         if not path.exists():
-            raise FileNotFoundError(f"File {path} missing")
+            with context("__root__"):
+                raise SoundFileNotFoundError(Path(self.__root__), path)
         return [path]
 
     def get_weight(self) -> int:
@@ -115,10 +167,19 @@ class Filenames(Weighted):
 
     def resolve_files(self, root: Path) -> List[Path]:
         """Resolve the paths relative to root"""
-        paths = [root / name for name in self.filenames]
-        missing = [p for p in paths if not p.exists()]
+        paths: List[Path] = []
+        missing: List[SoundFileNotFoundError] = []
+
+        with context("filenames"):
+            for index, name in enumerate(self.filenames):
+                path = root / name
+                paths.append(path)
+                if not path.exists():
+                    with context(index):
+                        missing.append(SoundFileNotFoundError(Path(name), path))
+
         if missing:
-            raise FileNotFoundError("Files missing: " + ", ".join(map(str, missing)))
+            raise ErrorCollection(*missing)
         return paths
 
 
@@ -142,7 +203,8 @@ class GlobFile(Weighted):
         """Resolve the glob into paths relative to root"""
         paths = list(root.glob(self.glob))
         if not paths:
-            raise Exception(f"No files in glob: {self.glob}")
+            with context("glob"):
+                raise EmptyGlobError(self.glob)
         return paths
 
 
@@ -172,9 +234,19 @@ class Sound(BaseModel):
         groups: List[List[Path]] = []
         weights: List[int] = []
 
-        for file in self.files:
-            groups.append(file.resolve_files(root))
-            weights.append(file.get_weight())
+        errors: List[BaseModelError] = []
+
+        with context("files"):
+            for index, file in enumerate(self.files):
+                try:
+                    with context(index):
+                        groups.append(file.resolve_files(root))
+                        weights.append(file.get_weight())
+                except BaseModelError as err:
+                    errors.append(err)
+
+        if errors:
+            raise ErrorCollection(*errors)
 
         return ResolvedSound(name=self.name, filegroups=groups, groupweights=weights)
 
@@ -223,10 +295,23 @@ class SoundsJson(BaseModel):
     def resolve_files(self, root: Path) -> SoundCollection:
         """Resolve the paths of all sounds relative to root"""
         collection: SoundCollection = dict()
-        for sound in self.sounds:
-            if sound.name in collection:
-                raise Exception(f"Re-use of name: {sound.name}")
-            collection[sound.name] = sound.resolve_files(root)
+        errors: List[BaseModelError] = []
+
+        with context("sounds"):
+            for index, sound in enumerate(self.sounds):
+                with context(index):
+                    if sound.name in collection:
+                        with context("name"):
+                            errors.append(SoundNameReuseError(sound.name))
+                    try:
+                        collection[sound.name] = sound.resolve_files(root)
+                    except BaseModelError as err:
+                        errors.append(err)
+                        # Allocate the key anyway, for re-use checks
+                        collection[sound.name] = None  # type: ignore
+
+        if errors:
+            raise ErrorCollection(*errors)
         return collection
 
 

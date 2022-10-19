@@ -9,7 +9,12 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from wowbot.model.sound import SoundsJson
+from wowbot.model.sound import (
+    EmptyGlobError,
+    SoundFileNotFoundError,
+    SoundNameReuseError,
+    SoundsJson,
+)
 
 
 class TestSoundsJson:
@@ -66,17 +71,18 @@ class TestSoundsJson:
         return {"version": 1, "sounds": list(sounds)}
 
     def test_missing_file_fails(self):
-        for element in [
-            "doesnotexist.opus",
-            {"filenames": ["doesnotexist.opus"]},
-            {"filenames": ["example1.opus", "doesnotexist.opus"]},
+        for element, ctx in [
+            ("doesnotexist.opus", ("__root__",)),
+            ({"filenames": ["doesnotexist.opus"]}, ("filenames", 0)),
+            ({"filenames": ["example1.opus", "doesnotexist.opus"]}, ("filenames", 1)),
         ]:
             data = self.get_data_from_files(element)
 
             sj = SoundsJson.parse_obj(data)
 
-            with pytest.raises(Exception):
+            with pytest.raises(SoundFileNotFoundError) as exc_info:
                 sj.resolve_files(self.ROOT)
+            assert exc_info.value.context == ("sounds", 0, "files", 0) + ctx
 
     def test_empty_glob_fails(self):
         for element in [{"glob": "doesnotexist-*.opus"}, {"glob": "missing-*.opus"}]:
@@ -84,8 +90,10 @@ class TestSoundsJson:
 
             sj = SoundsJson.parse_obj(data)
 
-            with pytest.raises(Exception):
+            with pytest.raises(EmptyGlobError) as exc_info:
                 sj.resolve_files(self.ROOT)
+            assert exc_info.value.pattern == element["glob"]
+            assert exc_info.value.context == ("sounds", 0, "files", 0, "glob")
 
     def test_duplicate_names_fails(self):
         for name in ["s.duplicate1", "s.duplicate2"]:
@@ -98,8 +106,9 @@ class TestSoundsJson:
 
             sj = SoundsJson.parse_obj(data)
 
-            with pytest.raises(Exception):
+            with pytest.raises(SoundNameReuseError) as exc_info:
                 sj.resolve_files(self.ROOT)
+            assert exc_info.value.name == name
 
     def test_no_files_fails(self):
         data = self.get_data_from_files()

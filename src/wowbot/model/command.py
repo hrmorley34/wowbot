@@ -16,8 +16,25 @@ from typing import Iterable, List, Literal, NewType, Union
 import regex
 from pydantic import ConstrainedStr, conlist, constr, validator
 
+from .errors import BaseModelError, ContextModelError, ErrorCollection, context
 from .model import BaseModel
 from .sound import SoundCollection, SoundName
+
+
+class SoundNotFoundError(ContextModelError):
+    """Error for a sound name which does not exist
+
+    .. autoattribute:: name
+    .. autoattribute:: context
+    """
+
+    name: SoundName
+    """The unknown name"""
+
+    def __init__(self, name: SoundName) -> None:
+        self.name = name
+        super().__init__(f"Sound {name} does not exist")
+
 
 # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming
 _ValidSlashFieldType = regex.compile(r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$")
@@ -48,7 +65,8 @@ class SoundCommand(BaseModel):
     def check_sounds(self, sound_names: set[SoundName]):
         """Verifies that the sounds name exists in :code:`sound_names`"""
         if self.sound not in sound_names:
-            raise Exception(f"Sound {self.sound} doesn't exist")
+            with context("sound"):
+                raise SoundNotFoundError(self.sound)
 
 
 class CommandChoice(BaseModel):
@@ -112,9 +130,16 @@ class ChoiceCommand(BaseModel):
 
     def check_sounds(self, sound_names: set[SoundName]):
         """Verifies that the names of sounds in the options exist in :code:`sound_names`"""
-        for choice in self.choices:
-            if choice.sound not in sound_names:
-                raise Exception(f"Sound {choice.sound} doesn't exist")
+        errors: List[SoundNotFoundError] = []
+
+        with context("choices"):
+            for index, choice in enumerate(self.choices):
+                with context(index):
+                    if choice.sound not in sound_names:
+                        errors.append(SoundNotFoundError(choice.sound))
+
+        if errors:
+            raise ErrorCollection(*errors)
 
 
 class SubcommandsCommand(BaseModel):
@@ -145,8 +170,18 @@ class SubcommandsCommand(BaseModel):
 
     def check_sounds(self, sound_names: set[SoundName]):
         """Verifies recursively that all sounds referenced by commands exist in :code:`sound_names`"""
-        for cmd in self.subcommands:
-            cmd.check_sounds(sound_names)
+        errors: List[BaseModelError] = []
+
+        with context("subcommands"):
+            for index, cmd in enumerate(self.subcommands):
+                with context(index):
+                    try:
+                        cmd.check_sounds(sound_names)
+                    except BaseModelError as err:
+                        errors.append(err)
+
+        if errors:
+            raise ErrorCollection(*errors)
 
 
 AnyCommand = Union[SoundCommand, ChoiceCommand, SubcommandsCommand]
@@ -180,5 +215,15 @@ class CommandsJson(BaseModel):
     def check_sounds(self, sound_names: Iterable[SoundName] | SoundCollection):
         """Verifies recursively that all sounds referenced by commands exist in :code:`sound_names`"""
         sound_names = set(sound_names)
-        for cmd in self.commands:
-            cmd.check_sounds(sound_names)
+        errors: List[BaseModelError] = []
+
+        with context("commands"):
+            for index, cmd in enumerate(self.commands):
+                with context(index):
+                    try:
+                        cmd.check_sounds(sound_names)
+                    except BaseModelError as err:
+                        errors.append(err)
+
+        if errors:
+            raise ErrorCollection(*errors)

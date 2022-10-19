@@ -13,6 +13,7 @@ from wowbot.model.command import (
     ChoiceCommand,
     CommandsJson,
     SoundCommand,
+    SoundNotFoundError,
     SubcommandsCommand,
 )
 from wowbot.model.sound import SoundName
@@ -140,7 +141,7 @@ class TestCommandsJson:
 
             cj = CommandsJson.parse_obj(data)
 
-            with pytest.raises(Exception):
+            with pytest.raises(SoundNotFoundError):
                 cj.check_sounds({SoundName("s.mysound")})
 
     def test_extra_field_fails(self):

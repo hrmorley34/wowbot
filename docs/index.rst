@@ -7,6 +7,7 @@ Welcome to Wowbot's documentation!
 
    sounds/sounds
    sounds/commands
+   model/errors
    model/sound
    model/command
 

@@ -24,3 +24,15 @@ Sound file models
 .. autoclass:: Filenames(**kwargs)
 
 .. autoclass:: GlobFile(**kwargs)
+
+----------
+Exceptions
+----------
+
+.. autoclass:: SoundNameReuseError
+
+.. autoclass:: SoundFileNotFoundError
+
+.. autoclass:: EmptyGlobError
+
+.. autoclass:: ErrorCollection

@@ -14,3 +14,9 @@ wowbot.model.command
 .. autoclass:: CommandChoice(**kwargs)
 
 .. autoclass:: SubcommandsCommand(**kwargs)
+
+----------
+Exceptions
+----------
+
+.. autoclass:: SoundNotFoundError
