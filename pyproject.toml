@@ -45,13 +45,12 @@ path = "src/wowbot/__about__.py"
 [tool.hatch.envs.default]
 [tool.hatch.envs.default.scripts]
 bot = "wowbot"
-sounds = "wowbot-sounds"
 
 [tool.hatch.envs.test]
 dependencies = ["pytest", "pytest-cov", "pre-commit"]
 [tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
-cov-html = "pytest --cov-report=html --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
+cov-file = "pytest --cov-report=html --cov-report=xml --cov-config=pyproject.toml --cov=src/wowbot --cov=tests"
 no-cov = "cov --no-cov"
 
 [tool.hatch.envs.testall]
