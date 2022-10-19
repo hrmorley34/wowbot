@@ -142,3 +142,32 @@ class TestCommandsJson:
 
             with pytest.raises(Exception):
                 cj.check_sounds({SoundName("s.mysound")})
+
+    def test_extra_field_fails(self):
+        with open(self.ROOT / "commands.json") as f:
+            # known functional data, according to other test
+            data_original = json.load(f)
+
+        for keys in [
+            ("badkey",),
+            ("commands", 0, "badkey"),
+            ("commands", 0, "default"),
+            ("commands", 1, "badkey"),
+            ("commands", 1, "choices", 0, "badkey"),
+            ("commands", 1, "choices", 1, "badkey"),
+            ("commands", 2, "badkey"),
+            ("commands", 2, "subcommands", 0, "badkey"),
+            ("commands", 2, "subcommands", 1, "badkey"),
+            ("commands", 2, "subcommands", 1, "choices", 0, "badkey"),
+            ("commands", 2, "subcommands", 1, "choices", 1, "badkey"),
+            ("commands", 2, "subcommands", 2, "badkey"),
+            ("commands", 2, "subcommands", 2, "subcommands", 0, "badkey"),
+        ]:
+            data = data_original.copy()
+            modify = data
+            for key in keys[:-1]:
+                modify = modify[key]
+            modify[keys[-1]] = None
+
+            with pytest.raises(ValidationError):
+                CommandsJson.parse_obj(data)

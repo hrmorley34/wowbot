@@ -114,3 +114,31 @@ class TestSoundsJson:
 
             with pytest.raises(ValidationError):
                 SoundsJson.parse_obj(data)
+
+    def test_extra_field_fails(self):
+        with open(self.ROOT / "sounds.json") as f:
+            # known functional data, according to other test
+            data_original = json.load(f)
+
+        for keys in [
+            ("badkey",),
+            ("sounds", 0, "badkey"),
+            ("sounds", 0, "filenames"),
+            ("sounds", 0, "glob"),
+            ("sounds", 0, "weight"),
+            ("sounds", 0, "files", 2, "badkey"),
+            ("sounds", 1, "badkey"),
+            ("sounds", 1, "filenames"),
+            ("sounds", 1, "glob"),
+            ("sounds", 1, "weight"),
+            ("sounds", 1, "files", 0, "badkey"),
+            ("sounds", 1, "files", 1, "badkey"),
+        ]:
+            data = data_original.copy()
+            modify = data
+            for key in keys[:-1]:
+                modify = modify[key]
+            modify[keys[-1]] = None
+
+            with pytest.raises(ValidationError):
+                SoundsJson.parse_obj(data)

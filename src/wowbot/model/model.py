@@ -6,7 +6,8 @@ import pydantic
 
 
 class BaseModel(pydantic.BaseModel):
-    pass
+    class Config:
+        extra = pydantic.Extra.forbid
 
 
 Snowflake = NewType("Snowflake", pydantic.conint(ge=0, lt=1 << 64))
