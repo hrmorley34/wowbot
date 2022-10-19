@@ -2,23 +2,25 @@
 wowbot.model.sound
 ==================
 
+.. py:module:: wowbot.model.sound
 
-.. autoclass:: wowbot.model.sound.SoundsJson(**kwargs)
 
-.. autoclass:: wowbot.model.sound.Sound(**kwargs)
+.. autoclass:: SoundsJson(**kwargs)
 
-.. autoclass:: wowbot.model.sound.ResolvedSound(**kwargs)
+.. autoclass:: Sound(**kwargs)
+
+.. autoclass:: ResolvedSound(**kwargs)
 
 -----------------
 Sound file models
 -----------------
 
-.. autoclass:: wowbot.model.sound.SoundFileABC(**kwargs)
+.. autoclass:: SoundFileABC(**kwargs)
 
-.. autoclass:: wowbot.model.sound.Filename(*, __root__: str)
+.. autoclass:: Filename(*, __root__: str)
 
-.. autoclass:: wowbot.model.sound.Weighted(**kwargs)
+.. autoclass:: Weighted(**kwargs)
 
-.. autoclass:: wowbot.model.sound.Filenames(**kwargs)
+.. autoclass:: Filenames(**kwargs)
 
-.. autoclass:: wowbot.model.sound.GlobFile(**kwargs)
+.. autoclass:: GlobFile(**kwargs)
