@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from discord import ApplicationContext, FFmpegOpusAudio, VoiceClient
 
 from ..model.sound import ResolvedSound

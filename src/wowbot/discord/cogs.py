@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from discord import ApplicationContext, Cog, slash_command
 
 from .util import get_voice_name, join, leave, respond
