@@ -6,8 +6,7 @@ from pathlib import Path
 import dotenv
 from discord import Bot
 
-from wowbot.model.soundsdir import SoundsDir
-
+from ..model.soundsdir import SoundsDir
 from .cogs import AdminCog, JoinCog
 from .slash import make_cog
 

@@ -11,8 +11,6 @@ from discord import (
     SlashCommandGroup,
 )
 
-from wowbot.model.soundsdir import SoundsDir
-
 from ..model.command import (
     AnyCommand,
     ChoiceCommand,
@@ -21,6 +19,7 @@ from ..model.command import (
     SubcommandsCommand,
 )
 from ..model.sound import SoundCollection, SoundName
+from ..model.soundsdir import SoundsDir
 from .sound import play_sound
 
 
