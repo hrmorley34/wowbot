@@ -11,10 +11,11 @@ __all__ = [
     "CommandsJson",
 ]
 
-from typing import Iterable, List, Literal, NewType, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Literal, NewType, Union
 
 import regex
-from pydantic import ConstrainedStr, conlist, constr, validator
+from pydantic import conlist, constr, validator
+from pydantic.errors import StrRegexError
 
 from .errors import BaseModelError, ContextModelError, ErrorCollection, context
 from .model import BaseModel
@@ -37,15 +38,38 @@ class SoundNotFoundError(ContextModelError):
 
 
 # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming
-_ValidSlashFieldType = regex.compile(r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$")
+class ValidSlashField(str):
+    regex = regex.compile(
+        r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$",
+        regex.UNICODE,
+    )
 
+    @classmethod
+    def __modify_schema__(cls, field_schema: dict[str, Any]) -> None:
+        field_schema.update(pattern=cls.regex.pattern)
 
-class ValidSlashField(ConstrainedStr):
-    regex = _ValidSlashFieldType  # type: ignore - regex and re have similar enough interfaces
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: str) -> str:
+        # lowercase variants of letters must be used
+        value = value.lower()
+
+        # check against regex
+        if not cls.regex.match(value):
+            raise StrRegexError(pattern=cls.regex.pattern)
+
+        return value
 
 
 SlashCommandName = NewType("SlashCommandName", ValidSlashField)
-ChoiceName = constr(min_length=1, max_length=100)
+if TYPE_CHECKING:
+    ChoiceName = str
+else:
+    # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-choice-structure
+    ChoiceName = constr(min_length=1, max_length=100)
 
 
 class SoundCommand(BaseModel):
@@ -57,7 +81,7 @@ class SoundCommand(BaseModel):
     .. automethod:: check_sounds
     """
 
-    name: ValidSlashField
+    name: SlashCommandName
     """The name of this command"""
     sound: SoundName
     """The sound to play"""
@@ -85,9 +109,12 @@ class CommandChoice(BaseModel):
     """Whether this option is the default option"""
 
 
-# https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure
-# choice? - max 25
-CommandChoiceList = conlist(CommandChoice, min_items=1, max_items=25)
+if TYPE_CHECKING:
+    CommandChoiceList = list[CommandChoice]
+else:
+    # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure
+    # choice? - max 25
+    CommandChoiceList = conlist(CommandChoice, min_items=1, max_items=25)
 
 
 class ChoiceCommand(BaseModel):
@@ -101,7 +128,7 @@ class ChoiceCommand(BaseModel):
     .. automethod:: check_sounds
     """
 
-    name: ValidSlashField
+    name: SlashCommandName
     """The name of this command"""
     optionname: ValidSlashField = ValidSlashField("sound")
     """The name of the option for this command"""
@@ -152,7 +179,7 @@ class SubcommandsCommand(BaseModel):
     .. automethod:: check_sounds
     """
 
-    name: ValidSlashField
+    name: SlashCommandName
     """The name of this command group"""
     subcommands: List[AnyCommand]
     """The subcommands of this command"""

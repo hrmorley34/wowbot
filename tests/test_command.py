@@ -76,6 +76,14 @@ class TestCommandsJson:
             name = str(uuid4())[:30]
         return {"name": name, "subcommands": list(commands)}
 
+    def test_invalid_name_fails(self):
+        for name in ["", "a" * 33, "a!b", "*"]:
+            cmd = {"name": name, "sound": "s.mysound"}
+            data = self.get_data_from_commands(cmd)
+
+            with pytest.raises(ValidationError):
+                CommandsJson.parse_obj(data)
+
     def test_choices_multiple_defaults_fails(self):
         for count in range(2, 5):
             choices = [
@@ -111,6 +119,27 @@ class TestCommandsJson:
             choices: list[Any] = [
                 {"name": f"thing{i}", "sound": "s.mysound"} for i in range(count)
             ]
+            choices[0]["default"] = True
+
+            cmd = {"name": "cmd", "choices": choices}
+            data = self.get_data_from_commands(cmd)
+
+            with pytest.raises(ValidationError):
+                CommandsJson.parse_obj(data)
+
+    def test_bad_name_choices_fails(self):
+        for choices in [
+            [
+                {"name": "a" * 101, "sound": "s.mysound"},
+                *({"name": f"thing{i}", "sound": "s.mysound"} for i in range(12)),
+            ],
+            [
+                *({"name": f"thing{i}", "sound": "s.mysound"} for i in range(0, 5)),
+                {"name": "", "sound": "s.mysound"},
+                *({"name": f"thing{i}", "sound": "s.mysound"} for i in range(5, 15)),
+            ],
+        ]:
+            choices: list[Any]
             choices[0]["default"] = True
 
             cmd = {"name": "cmd", "choices": choices}

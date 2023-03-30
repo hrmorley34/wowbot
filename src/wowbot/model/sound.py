@@ -18,7 +18,7 @@ import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Literal, NewType, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, NewType, Union
 
 from pydantic import conint, conlist
 
@@ -123,7 +123,10 @@ class Filename(SoundFileABC):
         return 1
 
 
-_WeightType = conint(gt=0, strict=True)  # strict prevents conversion from float
+if TYPE_CHECKING:
+    _WeightType = int
+else:
+    _WeightType = conint(gt=0, strict=True)  # strict prevents conversion from float
 
 
 class Weighted(SoundFileABC):
@@ -146,7 +149,10 @@ class Weighted(SoundFileABC):
         return self.weight
 
 
-_NonEmptyStringList = conlist(str, min_items=1)
+if TYPE_CHECKING:
+    _NonEmptyStringList = list[str]
+else:
+    _NonEmptyStringList = conlist(str, min_items=1)
 
 
 class Filenames(Weighted):
@@ -209,7 +215,10 @@ class GlobFile(Weighted):
 
 
 SoundFile = Union[Filename, Filenames, GlobFile]
-_NonEmptySoundFileList = conlist(SoundFile, min_items=1)
+if TYPE_CHECKING:
+    _NonEmptySoundFileList = list[SoundFile]
+else:
+    _NonEmptySoundFileList = conlist(SoundFile, min_items=1)
 
 
 class Sound(BaseModel):

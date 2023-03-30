@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Union
 
 from discord import (
     ApplicationContext,
@@ -114,7 +114,7 @@ COG_NAME = "SoundsCog"
 
 
 def make_cog_type(cmds: CommandsJson, sounds: SoundCollection) -> type[BaseSoundsCog]:
-    members = {}
+    members: dict[str, Any] = {}
     for cmd in cmds.commands:
         members[cmd.name] = make_command(cmd, sounds)
     return type(COG_NAME, (BaseSoundsCog,), members)

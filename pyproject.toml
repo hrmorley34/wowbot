@@ -19,11 +19,11 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
 ]
 dependencies = [
-  "py-cord[speed,voice] ~= 2.2.0",
+  "py-cord[speed,voice] ~= 2.4",
   "pydantic ~= 1.10",
   "python-dotenv",
   "regex",
-  "typer[all] ~= 0.6.1",
+  "typer[all] ~= 0.7",
 ]
 dynamic = ["version"]
 
@@ -70,7 +70,12 @@ parallel = true
 omit = ["src/wowbot/__about__.py"]
 
 [tool.coverage.report]
-exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "def __modify_schema__\\(",
+]
 
 [tool.isort]
 profile = "black"
