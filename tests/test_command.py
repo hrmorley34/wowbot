@@ -18,6 +18,8 @@ from wowbot.model.command import (
 )
 from wowbot.model.sound import SoundName
 
+from .utils import any_validation_error
+
 
 class TestCommandsJson:
     ROOT = Path("tests/sounds")
@@ -29,8 +31,9 @@ class TestCommandsJson:
 
         for version in {-1, 0, 2, 3, float("-inf"), float("NaN"), float("inf")}:
             data["version"] = version
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=("version",))
 
     def test_missing_key_fails(self):
         with open(self.ROOT / "commands.json") as f:
@@ -40,8 +43,11 @@ class TestCommandsJson:
         for key in ["version", "commands"]:
             data = data_original.copy()
             del data[key]
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(
+                excinfo.value, loc=(key,), type="value_error.missing"
+            )
 
     def test_commands_example(self):
         with open(self.ROOT / "commands.json") as f:
@@ -81,8 +87,9 @@ class TestCommandsJson:
             cmd = {"name": name, "sound": "s.mysound"}
             data = self.get_data_from_commands(cmd)
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=("commands", 0, "name"))
 
     def test_choices_multiple_defaults_fails(self):
         for count in range(2, 5):
@@ -93,8 +100,9 @@ class TestCommandsJson:
             cmd = {"name": "cmd", "choices": choices}
             data = self.get_data_from_commands(cmd)
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
 
     def test_subcommand_too_deep_fails(self):
         # sub of sub of sub-group - not allowed
@@ -111,8 +119,9 @@ class TestCommandsJson:
         cmd: Any = {"name": "cmd", "choices": []}
         data = self.get_data_from_commands(cmd)
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as excinfo:
             CommandsJson.parse_obj(data)
+        assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
 
     def test_too_many_choices_fails(self):
         for count in [26, 27, 100]:
@@ -124,8 +133,9 @@ class TestCommandsJson:
             cmd = {"name": "cmd", "choices": choices}
             data = self.get_data_from_commands(cmd)
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
 
     def test_bad_name_choices_fails(self):
         for choices in [
@@ -145,8 +155,11 @@ class TestCommandsJson:
             cmd = {"name": "cmd", "choices": choices}
             data = self.get_data_from_commands(cmd)
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(
+                excinfo.value, loc=("commands", 0, "choices", None, "name")
+            )
 
     def test_missing_sound_fails(self):
         simple_missing = {"name": "cmd", "sound": "s.missing"}
@@ -199,5 +212,8 @@ class TestCommandsJson:
                 modify = modify[key]
             modify[keys[-1]] = None
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 CommandsJson.parse_obj(data)
+            assert any_validation_error(
+                excinfo.value, loc=keys, type="value_error.extra"
+            )

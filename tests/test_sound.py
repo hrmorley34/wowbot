@@ -16,6 +16,8 @@ from wowbot.model.sound import (
     SoundsJson,
 )
 
+from .utils import any_validation_error
+
 
 class TestSoundsJson:
     ROOT = Path("tests/sounds")
@@ -27,8 +29,9 @@ class TestSoundsJson:
 
         for version in {-1, 0, 2, 3, float("-inf"), float("NaN"), float("inf")}:
             data["version"] = version
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 SoundsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=("version",))
 
     def test_missing_key_fails(self):
         with open(self.ROOT / "sounds.json") as f:
@@ -38,8 +41,9 @@ class TestSoundsJson:
         for key in ["version", "sounds"]:
             data = data_original.copy()
             del data[key]
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 SoundsJson.parse_obj(data)
+            assert any_validation_error(excinfo.value, loc=(key,))
 
     def test_sounds_example(self):
         with open(self.ROOT / "sounds.json") as f:
@@ -113,16 +117,20 @@ class TestSoundsJson:
     def test_no_files_fails(self):
         data = self.get_data_from_files()
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as excinfo:
             SoundsJson.parse_obj(data)
+        assert any_validation_error(excinfo.value, loc=("sounds", 0, "files"))
 
     def test_invalid_weight_fails(self):
         for weight in [-100, -1, 0, 0.5, 1.0, 1.5]:
             file = {"filenames": ["example1.opus"], "weight": weight}
             data = self.get_data_from_files(file)
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 SoundsJson.parse_obj(data)
+            assert any_validation_error(
+                excinfo.value, loc=("sounds", 0, "files", 0, "weight")
+            )
 
     def test_extra_field_fails(self):
         with open(self.ROOT / "sounds.json") as f:
@@ -149,5 +157,8 @@ class TestSoundsJson:
                 modify = modify[key]
             modify[keys[-1]] = None
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValidationError) as excinfo:
                 SoundsJson.parse_obj(data)
+            assert any_validation_error(
+                excinfo.value, loc=keys, type="value_error.extra"
+            )
