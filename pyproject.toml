@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
   "py-cord[speed,voice] ~= 2.4",
@@ -56,7 +57,7 @@ no-cov = "cov --no-cov"
 [tool.hatch.envs.testall]
 template = "test"
 [[tool.hatch.envs.testall.matrix]]
-python = ["38", "39", "310"]
+python = ["38", "39", "310", "311"]
 
 [tool.hatch.envs.docs]
 dependencies = ["sphinx"]
