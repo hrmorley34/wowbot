@@ -2,9 +2,9 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/hrmorley34/wowbot/pre-commit?label=pre-commit&logo=github)](https://github.com/hrmorley34/wowbot/actions/workflows/pre-commit.yml?query=branch%3Amain)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/hrmorley34/wowbot/pre-commit.yml?branch=main&label=pre-commit&logo=github)](https://github.com/hrmorley34/wowbot/actions/workflows/pre-commit.yml?query=branch%3Amain)
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/hrmorley34/wowbot/test?label=test&logo=github)](https://github.com/hrmorley34/wowbot/actions/workflows/test.yml?query=branch%3Amain)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/hrmorley34/wowbot/test.yml?branch=main&label=test&logo=github)](https://github.com/hrmorley34/wowbot/actions/workflows/test.yml?query=branch%3Amain)
 
 -----
 
