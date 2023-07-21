@@ -6,8 +6,7 @@ import pydantic
 
 
 class BaseModel(pydantic.BaseModel):
-    class Config:
-        extra = pydantic.Extra.forbid
+    model_config = {"extra": "forbid"}
 
 
 if TYPE_CHECKING:

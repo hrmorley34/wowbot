@@ -22,13 +22,13 @@ class SoundsDir:
         with open(sounds_path) as f:
             sounds_data = json.load(f)
 
-        self.sounds_json = SoundsJson.parse_obj(sounds_data)
+        self.sounds_json = SoundsJson.model_validate(sounds_data)
         self.sound_collection = self.sounds_json.resolve_files(sounds_root)
 
         with open(commands_path) as f:
             commands_data = json.load(f)
 
-        self.commands_json = CommandsJson.parse_obj(commands_data)
+        self.commands_json = CommandsJson.model_validate(commands_data)
         self.commands_json.check_sounds(self.sound_collection)
 
     @classmethod

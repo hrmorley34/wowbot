@@ -11,11 +11,9 @@ __all__ = [
     "CommandsJson",
 ]
 
-from typing import TYPE_CHECKING, Any, Iterable, List, Literal, NewType, Union
+from typing import TYPE_CHECKING, Iterable, List, Literal, NewType, Union
 
-import regex
-from pydantic import conlist, constr, validator
-from pydantic.errors import StrRegexError
+from pydantic import conlist, constr, field_validator
 
 from .errors import BaseModelError, ContextModelError, ErrorCollection, context
 from .model import BaseModel
@@ -37,31 +35,12 @@ class SoundNotFoundError(ContextModelError):
         super().__init__(f"Sound {name} does not exist")
 
 
-# https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming
-class ValidSlashField(str):
-    regex = regex.compile(
-        r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$",
-        regex.UNICODE,
-    )
-
-    @classmethod
-    def __modify_schema__(cls, field_schema: dict[str, Any]) -> None:
-        field_schema.update(pattern=cls.regex.pattern)
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: str) -> str:
-        # lowercase variants of letters must be used
-        value = value.lower()
-
-        # check against regex
-        if not cls.regex.match(value):
-            raise StrRegexError(pattern=cls.regex.pattern)
-
-        return value
+if TYPE_CHECKING:
+    ValidSlashField = str
+else:
+    # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming
+    # This regex is not supported by `re`, but is by pydantic-core's underlying rust
+    ValidSlashField = constr(pattern=r"^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$")
 
 
 SlashCommandName = NewType("SlashCommandName", ValidSlashField)
@@ -114,7 +93,7 @@ if TYPE_CHECKING:
 else:
     # https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure
     # choice? - max 25
-    CommandChoiceList = conlist(CommandChoice, min_items=1, max_items=25)
+    CommandChoiceList = conlist(CommandChoice, min_length=1, max_length=25)
 
 
 class ChoiceCommand(BaseModel):
@@ -138,7 +117,7 @@ class ChoiceCommand(BaseModel):
     There must be between 1 and 25 options, of which only 0 or 1 can have default
     set to True"""
 
-    @validator("choices")
+    @field_validator("choices")
     def check_choices_defaults(cls, value: CommandChoiceList) -> CommandChoiceList:
         """Verifies that only 0 or 1 choices are set as the default"""
         defaultscount = 0
@@ -169,12 +148,15 @@ class ChoiceCommand(BaseModel):
             raise ErrorCollection(*errors)
 
 
+MAX_SUBCOMMAND_DEPTH = 2
+"""The maximum depth of a nested subcommand"""
+
+
 class SubcommandsCommand(BaseModel):
     """A group of subcommands
 
     .. autoattribute:: name
     .. autoattribute:: subcommands
-    .. autoattribute:: MAX_DEPTH
 
     .. automethod:: check_sounds
     """
@@ -184,12 +166,9 @@ class SubcommandsCommand(BaseModel):
     subcommands: List[AnyCommand]
     """The subcommands of this command"""
 
-    MAX_DEPTH = 2
-    """The maximum depth of a nested subcommand"""
-
     def validate_depth(self, current: int):
         """Verifies recursively that the subcommands have a limited depth"""
-        if current >= self.MAX_DEPTH:
+        if current >= MAX_SUBCOMMAND_DEPTH:
             raise ValueError(f"Subcommand {self.name} too deep")
         for cmd in self.subcommands:
             if isinstance(cmd, SubcommandsCommand):
@@ -214,7 +193,7 @@ class SubcommandsCommand(BaseModel):
 AnyCommand = Union[SoundCommand, ChoiceCommand, SubcommandsCommand]
 
 
-SubcommandsCommand.update_forward_refs()
+SubcommandsCommand.model_rebuild()
 
 
 class CommandsJson(BaseModel):
@@ -231,7 +210,7 @@ class CommandsJson(BaseModel):
     commands: List[AnyCommand]
     """The list of commands."""
 
-    @validator("commands")
+    @field_validator("commands")
     def validate_subcommand_depth(cls, cmds: List[AnyCommand]):
         """Verifies recursively that the subcommands have a limited depth"""
         for cmd in cmds:

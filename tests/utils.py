@@ -1,9 +1,34 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, Set, Tuple, Union
 
 from pydantic import ValidationError
 
 Location = Tuple[Union[str, int], ...]
-PartialLocation = Optional[Tuple[Union[str, int, None], ...]]
+
+
+class UnionMember:
+    values: Optional[Set[str]]
+
+    def __init__(self, value: Optional[Union[Set[str], str, type]] = None) -> None:
+        if value is None:
+            self.values = None
+        elif isinstance(value, str):
+            self.values = {value}
+        elif isinstance(value, type):
+            self.values = {value.__name__}
+        else:
+            self.values = set(value)
+
+    def check(self, value: Union[str, int]) -> bool:
+        return self.values is None or value in self.values
+
+
+PartialLocation = Optional[Tuple[Union[str, int, UnionMember, None], ...]]
+
+
+def filter_location(loc: PartialLocation) -> Location:
+    if loc is None or None in loc:
+        raise ValueError
+    return tuple(m for m in loc if m is not None and not isinstance(m, UnionMember))
 
 
 def compare_locations(loc: Location, loc2: PartialLocation) -> bool:
@@ -12,7 +37,12 @@ def compare_locations(loc: Location, loc2: PartialLocation) -> bool:
     if len(loc) != len(loc2):
         return False
     for c, c2 in zip(loc, loc2):
-        if c2 is not None and c != c2:
+        if c2 is None:
+            continue
+        elif isinstance(c2, UnionMember):
+            if not c2.check(c):
+                return False
+        elif c != c2:
             return False
     return True
 

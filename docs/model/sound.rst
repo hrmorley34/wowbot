@@ -17,7 +17,7 @@ Sound file models
 
 .. autoclass:: SoundFileABC(**kwargs)
 
-.. autoclass:: Filename(*, __root__: str)
+.. autoclass:: Filename(*, root: str)
 
 .. autoclass:: Weighted(**kwargs)
 

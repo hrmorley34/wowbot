@@ -18,7 +18,7 @@ from wowbot.model.command import (
 )
 from wowbot.model.sound import SoundName
 
-from .utils import any_validation_error
+from .utils import UnionMember, any_validation_error, filter_location
 
 
 class TestCommandsJson:
@@ -32,8 +32,10 @@ class TestCommandsJson:
         for version in {-1, 0, 2, 3, float("-inf"), float("NaN"), float("inf")}:
             data["version"] = version
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=("version",))
+                CommandsJson.model_validate(data)
+            assert any_validation_error(
+                excinfo.value, loc=("version",), type="literal_error"
+            )
 
     def test_missing_key_fails(self):
         with open(self.ROOT / "commands.json") as f:
@@ -44,16 +46,14 @@ class TestCommandsJson:
             data = data_original.copy()
             del data[key]
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(
-                excinfo.value, loc=(key,), type="value_error.missing"
-            )
+                CommandsJson.model_validate(data)
+            assert any_validation_error(excinfo.value, loc=(key,), type="missing")
 
     def test_commands_example(self):
         with open(self.ROOT / "commands.json") as f:
             data = json.load(f)
 
-        cj = CommandsJson.parse_obj(data)
+        cj = CommandsJson.model_validate(data)
 
         assert len(cj.commands) == 3
         assert isinstance(cj.commands[0], SoundCommand)
@@ -88,8 +88,12 @@ class TestCommandsJson:
             data = self.get_data_from_commands(cmd)
 
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=("commands", 0, "name"))
+                CommandsJson.model_validate(data)
+            assert any_validation_error(
+                excinfo.value,
+                loc=("commands", 0, UnionMember(None), "name"),
+                type="string_pattern_mismatch",
+            )
 
     def test_choices_multiple_defaults_fails(self):
         for count in range(2, 5):
@@ -101,8 +105,12 @@ class TestCommandsJson:
             data = self.get_data_from_commands(cmd)
 
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
+                CommandsJson.model_validate(data)
+            assert any_validation_error(
+                excinfo.value,
+                loc=("commands", 0, UnionMember(ChoiceCommand), "choices"),
+                type="value_error",
+            )
 
     def test_subcommand_too_deep_fails(self):
         # sub of sub of sub-group - not allowed
@@ -112,16 +120,25 @@ class TestCommandsJson:
         dep0 = self.get_subcommand_from_commands(dep1, dep3.copy())  # base
         data = self.get_data_from_commands(dep0)
 
-        with pytest.raises(ValidationError):
-            CommandsJson.parse_obj(data)
+        with pytest.raises(ValidationError) as excinfo:
+            CommandsJson.model_validate(data)
+        assert any_validation_error(
+            excinfo.value,
+            loc=("commands",),
+            type="value_error",
+        )
 
     def test_no_choices_fails(self):
         cmd: Any = {"name": "cmd", "choices": []}
         data = self.get_data_from_commands(cmd)
 
         with pytest.raises(ValidationError) as excinfo:
-            CommandsJson.parse_obj(data)
-        assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
+            CommandsJson.model_validate(data)
+        assert any_validation_error(
+            excinfo.value,
+            loc=("commands", 0, UnionMember(ChoiceCommand), "choices"),
+            type="too_short",
+        )
 
     def test_too_many_choices_fails(self):
         for count in [26, 27, 100]:
@@ -134,8 +151,12 @@ class TestCommandsJson:
             data = self.get_data_from_commands(cmd)
 
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=("commands", 0, "choices"))
+                CommandsJson.model_validate(data)
+            assert any_validation_error(
+                excinfo.value,
+                loc=("commands", 0, UnionMember(ChoiceCommand), "choices"),
+                type="too_long",
+            )
 
     def test_bad_name_choices_fails(self):
         for choices in [
@@ -156,9 +177,17 @@ class TestCommandsJson:
             data = self.get_data_from_commands(cmd)
 
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
+                CommandsJson.model_validate(data)
             assert any_validation_error(
-                excinfo.value, loc=("commands", 0, "choices", None, "name")
+                excinfo.value,
+                loc=(
+                    "commands",
+                    0,
+                    UnionMember(ChoiceCommand),
+                    "choices",
+                    None,
+                    "name",
+                ),
             )
 
     def test_missing_sound_fails(self):
@@ -181,7 +210,7 @@ class TestCommandsJson:
         ]:
             data = self.get_data_from_commands(cmd)
 
-            cj = CommandsJson.parse_obj(data)
+            cj = CommandsJson.model_validate(data)
 
             with pytest.raises(SoundNotFoundError):
                 cj.check_sounds({SoundName("s.mysound")})
@@ -191,29 +220,97 @@ class TestCommandsJson:
             # known functional data, according to other test
             data_original = json.load(f)
 
-        for keys in [
+        for loc in [
             ("badkey",),
-            ("commands", 0, "badkey"),
-            ("commands", 0, "default"),
-            ("commands", 1, "badkey"),
-            ("commands", 1, "choices", 0, "badkey"),
-            ("commands", 1, "choices", 1, "badkey"),
-            ("commands", 2, "badkey"),
-            ("commands", 2, "subcommands", 0, "badkey"),
-            ("commands", 2, "subcommands", 1, "badkey"),
-            ("commands", 2, "subcommands", 1, "choices", 0, "badkey"),
-            ("commands", 2, "subcommands", 1, "choices", 1, "badkey"),
-            ("commands", 2, "subcommands", 2, "badkey"),
-            ("commands", 2, "subcommands", 2, "subcommands", 0, "badkey"),
+            ("commands", 0, UnionMember(None), "badkey"),
+            ("commands", 0, UnionMember(None), "default"),
+            ("commands", 1, UnionMember(None), "badkey"),
+            (
+                "commands",
+                1,
+                UnionMember(ChoiceCommand),
+                "choices",
+                0,
+                "badkey",
+            ),
+            (
+                "commands",
+                1,
+                UnionMember(ChoiceCommand),
+                "choices",
+                1,
+                "badkey",
+            ),
+            ("commands", 2, UnionMember(None), "badkey"),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                0,
+                UnionMember(None),
+                "badkey",
+            ),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                1,
+                UnionMember(None),
+                "badkey",
+            ),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                1,
+                UnionMember(ChoiceCommand),
+                "choices",
+                0,
+                "badkey",
+            ),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                1,
+                UnionMember(ChoiceCommand),
+                "choices",
+                1,
+                "badkey",
+            ),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                2,
+                UnionMember(None),
+                "badkey",
+            ),
+            (
+                "commands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                2,
+                UnionMember(SubcommandsCommand),
+                "subcommands",
+                0,
+                UnionMember(None),
+                "badkey",
+            ),
         ]:
             data = data_original.copy()
             modify = data
+            keys = filter_location(loc)
             for key in keys[:-1]:
                 modify = modify[key]
             modify[keys[-1]] = None
 
             with pytest.raises(ValidationError) as excinfo:
-                CommandsJson.parse_obj(data)
-            assert any_validation_error(
-                excinfo.value, loc=keys, type="value_error.extra"
-            )
+                CommandsJson.model_validate(data)
+            assert any_validation_error(excinfo.value, loc=loc, type="extra_forbidden")

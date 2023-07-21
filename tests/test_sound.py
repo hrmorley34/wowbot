@@ -16,7 +16,7 @@ from wowbot.model.sound import (
     SoundsJson,
 )
 
-from .utils import any_validation_error
+from .utils import UnionMember, any_validation_error, filter_location
 
 
 class TestSoundsJson:
@@ -30,8 +30,10 @@ class TestSoundsJson:
         for version in {-1, 0, 2, 3, float("-inf"), float("NaN"), float("inf")}:
             data["version"] = version
             with pytest.raises(ValidationError) as excinfo:
-                SoundsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=("version",))
+                SoundsJson.model_validate(data)
+            assert any_validation_error(
+                excinfo.value, loc=("version",), type="literal_error"
+            )
 
     def test_missing_key_fails(self):
         with open(self.ROOT / "sounds.json") as f:
@@ -42,14 +44,14 @@ class TestSoundsJson:
             data = data_original.copy()
             del data[key]
             with pytest.raises(ValidationError) as excinfo:
-                SoundsJson.parse_obj(data)
-            assert any_validation_error(excinfo.value, loc=(key,))
+                SoundsJson.model_validate(data)
+            assert any_validation_error(excinfo.value, loc=(key,), type="missing")
 
     def test_sounds_example(self):
         with open(self.ROOT / "sounds.json") as f:
             data = json.load(f)
 
-        sj = SoundsJson.parse_obj(data)
+        sj = SoundsJson.model_validate(data)
 
         resolved = sj.resolve_files(self.ROOT)
 
@@ -76,13 +78,13 @@ class TestSoundsJson:
 
     def test_missing_file_fails(self):
         for element, ctx in [
-            ("doesnotexist.opus", ("__root__",)),
+            ("doesnotexist.opus", ("root",)),
             ({"filenames": ["doesnotexist.opus"]}, ("filenames", 0)),
             ({"filenames": ["example1.opus", "doesnotexist.opus"]}, ("filenames", 1)),
         ]:
             data = self.get_data_from_files(element)
 
-            sj = SoundsJson.parse_obj(data)
+            sj = SoundsJson.model_validate(data)
 
             with pytest.raises(SoundFileNotFoundError) as exc_info:
                 sj.resolve_files(self.ROOT)
@@ -92,7 +94,7 @@ class TestSoundsJson:
         for element in [{"glob": "doesnotexist-*.opus"}, {"glob": "missing-*.opus"}]:
             data = self.get_data_from_files(element)
 
-            sj = SoundsJson.parse_obj(data)
+            sj = SoundsJson.model_validate(data)
 
             with pytest.raises(EmptyGlobError) as exc_info:
                 sj.resolve_files(self.ROOT)
@@ -108,7 +110,7 @@ class TestSoundsJson:
                 )
             )
 
-            sj = SoundsJson.parse_obj(data)
+            sj = SoundsJson.model_validate(data)
 
             with pytest.raises(SoundNameReuseError) as exc_info:
                 sj.resolve_files(self.ROOT)
@@ -118,8 +120,10 @@ class TestSoundsJson:
         data = self.get_data_from_files()
 
         with pytest.raises(ValidationError) as excinfo:
-            SoundsJson.parse_obj(data)
-        assert any_validation_error(excinfo.value, loc=("sounds", 0, "files"))
+            SoundsJson.model_validate(data)
+        assert any_validation_error(
+            excinfo.value, loc=("sounds", 0, "files"), type="too_short"
+        )
 
     def test_invalid_weight_fails(self):
         for weight in [-100, -1, 0, 0.5, 1.0, 1.5]:
@@ -127,38 +131,38 @@ class TestSoundsJson:
             data = self.get_data_from_files(file)
 
             with pytest.raises(ValidationError) as excinfo:
-                SoundsJson.parse_obj(data)
+                SoundsJson.model_validate(data)
             assert any_validation_error(
-                excinfo.value, loc=("sounds", 0, "files", 0, "weight")
+                excinfo.value,
+                loc=("sounds", 0, "files", 0, UnionMember(None), "weight"),
             )
 
     def test_extra_field_fails(self):
         with open(self.ROOT / "sounds.json") as f:
             # known functional data, according to other test
-            data_original = json.load(f)
+            data_str = f.read()
 
-        for keys in [
+        for loc in [
             ("badkey",),
             ("sounds", 0, "badkey"),
             ("sounds", 0, "filenames"),
             ("sounds", 0, "glob"),
             ("sounds", 0, "weight"),
-            ("sounds", 0, "files", 2, "badkey"),
+            ("sounds", 0, "files", 2, UnionMember(None), "badkey"),
             ("sounds", 1, "badkey"),
             ("sounds", 1, "filenames"),
             ("sounds", 1, "glob"),
             ("sounds", 1, "weight"),
-            ("sounds", 1, "files", 0, "badkey"),
-            ("sounds", 1, "files", 1, "badkey"),
+            ("sounds", 1, "files", 0, UnionMember(None), "badkey"),
+            ("sounds", 1, "files", 1, UnionMember(None), "badkey"),
         ]:
-            data = data_original.copy()
+            data = json.loads(data_str)
             modify = data
+            keys = filter_location(loc)
             for key in keys[:-1]:
                 modify = modify[key]
             modify[keys[-1]] = None
 
             with pytest.raises(ValidationError) as excinfo:
-                SoundsJson.parse_obj(data)
-            assert any_validation_error(
-                excinfo.value, loc=keys, type="value_error.extra"
-            )
+                SoundsJson.model_validate(data)
+            assert any_validation_error(excinfo.value, loc=loc, type="extra_forbidden")

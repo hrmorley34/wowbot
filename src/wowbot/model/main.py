@@ -170,7 +170,7 @@ def check_folder(folder: Path) -> None:
     sounds: SoundsJson | None = None
     if sounds_data is not None:
         try:
-            sounds = SoundsJson.parse_obj(sounds_data)
+            sounds = SoundsJson.model_validate(sounds_data)
         except pydantic.ValidationError as err:
             console.print(make_validation_error_panel(err, SOUNDS_FILE))
             exit_code |= 1
@@ -204,7 +204,7 @@ def check_folder(folder: Path) -> None:
     commands: CommandsJson | None = None
     if commands_data is not None:
         try:
-            commands = CommandsJson.parse_obj(commands_data)
+            commands = CommandsJson.model_validate(commands_data)
         except pydantic.ValidationError as err:
             console.print(make_validation_error_panel(err, COMMANDS_FILE))
             exit_code |= 1

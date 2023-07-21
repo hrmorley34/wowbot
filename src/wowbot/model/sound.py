@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Literal, NewType, Union
 
-from pydantic import conint, conlist
+from pydantic import RootModel, conint, conlist
 
 from .errors import BaseModelError, ContextModelError, ErrorCollection, context
 from .model import BaseModel
@@ -96,24 +96,24 @@ class SoundFileABC(BaseModel, ABC):
         ...  # no cov
 
 
-class Filename(SoundFileABC):
+class Filename(SoundFileABC, RootModel[str]):
     """A single filename with weight 1
 
-    .. autoattribute:: __root__
+    .. autoattribute:: root
 
     .. automethod:: resolve_files
     .. automethod:: get_weight
     """
 
-    __root__: str
+    root: str
     """The file path"""
 
     def resolve_files(self, root: Path) -> List[Path]:
         """Resolve the path relative to root"""
-        path = root / self.__root__
+        path = root / self.root
         if not path.exists():
-            with context("__root__"):
-                raise SoundFileNotFoundError(Path(self.__root__), path)
+            with context("root"):
+                raise SoundFileNotFoundError(Path(self.root), path)
         return [path]
 
     def get_weight(self) -> int:
@@ -152,7 +152,7 @@ class Weighted(SoundFileABC):
 if TYPE_CHECKING:
     _NonEmptyStringList = list[str]
 else:
-    _NonEmptyStringList = conlist(str, min_items=1)
+    _NonEmptyStringList = conlist(str, min_length=1)
 
 
 class Filenames(Weighted):
@@ -218,7 +218,7 @@ SoundFile = Union[Filename, Filenames, GlobFile]
 if TYPE_CHECKING:
     _NonEmptySoundFileList = list[SoundFile]
 else:
-    _NonEmptySoundFileList = conlist(SoundFile, min_items=1)
+    _NonEmptySoundFileList = conlist(SoundFile, min_length=1)
 
 
 class Sound(BaseModel):
