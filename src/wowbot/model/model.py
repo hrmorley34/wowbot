@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NewType
+from typing import TYPE_CHECKING, Generic, NewType, TypeVar
 
 import pydantic
+
+T = TypeVar("T")
 
 
 class BaseModel(pydantic.BaseModel):
     model_config = {"extra": "forbid"}
+
+
+class RootModel(BaseModel, pydantic.RootModel[T], Generic[T]):
+    model_config = {"extra": None}  # `extra` not allowed for `RootModel`
 
 
 if TYPE_CHECKING:

@@ -20,10 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Literal, NewType, Union
 
-from pydantic import RootModel, conint, conlist
+from pydantic import conint, conlist
 
 from .errors import BaseModelError, ContextModelError, ErrorCollection, context
-from .model import BaseModel
+from .model import BaseModel, RootModel
 
 SoundName = NewType("SoundName", str)
 
